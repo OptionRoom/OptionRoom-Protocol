@@ -25,8 +25,8 @@
 
 pragma solidity ^0.5.16;
 
-import "../ERC20/IERC20.sol";
-import "../lib/SafeMath.sol";
+import "../../openzeppelin/contracts/math/SafeMath.sol";
+import "../../openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract TokenVestingPools {
     using SafeMath for uint256;

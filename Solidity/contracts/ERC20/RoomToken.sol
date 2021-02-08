@@ -1,17 +1,8 @@
 pragma solidity ^0.5.16;
 
-import "./IERC20.sol";
-import "../lib/SafeMath.sol";
-
-
-contract Context {
-    constructor () internal { }
-    // solhint-disable-previous-line no-empty-blocks
-
-    function _msgSender() internal view returns (address payable) {
-        return msg.sender;
-    }
-}
+import "../../openzeppelin/contracts/math/SafeMath.sol";
+import "../../openzeppelin/contracts/GSN/Context.sol";
+import "../../openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ERC20 is Context, IERC20 {
     using SafeMath for uint;
@@ -24,41 +15,41 @@ contract ERC20 is Context, IERC20 {
     function totalSupply() public view returns (uint) {
         return _totalSupply;
     }
-    
+
     function balanceOf(address account) public view returns (uint) {
         return _balances[account];
     }
-    
+
     function transfer(address recipient, uint amount) public returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
-    
+
     function allowance(address owner, address spender) public view returns (uint) {
         return _allowances[owner][spender];
     }
-    
+
     function approve(address spender, uint amount) public returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
-    
+
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }
-    
+
     function increaseAllowance(address spender, uint addedValue) public returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
         return true;
     }
-    
+
     function decreaseAllowance(address spender, uint subtractedValue) public returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
         return true;
     }
-    
+
     function _transfer(address sender, address recipient, uint amount) internal {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
@@ -67,7 +58,7 @@ contract ERC20 is Context, IERC20 {
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
-    
+
     function _mint(address account, uint amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
 
@@ -75,7 +66,7 @@ contract ERC20 is Context, IERC20 {
         _balances[account] = _balances[account].add(amount);
         emit Transfer(address(0), account, amount);
     }
-    
+
     function _burn(address account, uint amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
 
@@ -83,7 +74,7 @@ contract ERC20 is Context, IERC20 {
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
-    
+
     function _approve(address owner, address spender, uint amount) internal {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
@@ -115,7 +106,7 @@ contract ERC20Detailed is ERC20 {
 }
 
 contract RoomToken is ERC20Detailed {
-  
+
   constructor () public ERC20Detailed("ROOM", "ROOM", 18) {
       _mint(msg.sender,100000000e18 ); // minting 100,000,000 token with 18 decimals
   }
