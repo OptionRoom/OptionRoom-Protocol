@@ -8,36 +8,36 @@
 * This contract cliffs 10M ROOM tokens for 1 year with 25% vested every 3 months thereafter
 *
 * ROOM Protocol rewards 38M tokens
-* will be transferred to multi-sig wallet (0xd9d9e82dd6042eabb6ea5764217130F8b38d2Bf7) owned by the foundation till May 2021, 
+* will be transferred to multi-sig wallet (0xd9d9e82dd6042eabb6ea5764217130F8b38d2Bf7) owned by the foundation till May 2021,
 * and then transferred to the protocol contract address.
-* 
+*
 * Foundation tokens 14.67M tokens cliffed for 1 year then vested for 25% every 3 months thereafter
-* will be transferred to multi-sig wallet (0xc56Ea5CC5eEA2B43632c1Dcb6a3856e75ebFa33b) 
-* 
+* will be transferred to multi-sig wallet (0xc56Ea5CC5eEA2B43632c1Dcb6a3856e75ebFa33b)
+*
 */
 
 pragma solidity ^0.5.16;
 
 library SafeMath {
-    
+
     function add(uint a, uint b) internal pure returns (uint) {
         uint c = a + b;
         require(c >= a, "SafeMath: addition overflow");
 
         return c;
     }
-    
+
     function sub(uint a, uint b) internal pure returns (uint) {
         return sub(a, b, "SafeMath: subtraction overflow");
     }
-    
+
     function sub(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
         require(b <= a, errorMessage);
         uint c = a - b;
 
         return c;
     }
-    
+
     function mul(uint a, uint b) internal pure returns (uint) {
         if (a == 0) {
             return 0;
@@ -48,11 +48,11 @@ library SafeMath {
 
         return c;
     }
-    
+
     function div(uint a, uint b) internal pure returns (uint) {
         return div(a, b, "SafeMath: division by zero");
     }
-    
+
     function div(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
         // Solidity only automatically asserts when dividing by 0
         require(b > 0, errorMessage);
@@ -69,7 +69,7 @@ interface IERC20 {
     function allowance(address owner, address spender) external view returns (uint);
     function approve(address spender, uint amount) external returns (bool);
     function transferFrom(address sender, address recipient, uint amount) external returns (bool);
-	event Transfer(address indexed from, address indexed to, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
     event Approval(address indexed owner, address indexed spender, uint value);
 }
 
@@ -89,11 +89,11 @@ contract TokenVestingPools {
         uint8 index;
         string name;
     }
-    
+
     IERC20 public lockedToken;
-    
+
     PoolInfo[] public lockPools;
-    
+
     mapping (uint8 => mapping (address => UserInfo)) internal userInfo;
 
     event Claim(uint8 pid, address indexed beneficiary, uint value);
@@ -104,14 +104,14 @@ contract TokenVestingPools {
     }
 
     function _addVestingPool(string memory _name, uint256 _startReleasingTime, uint256 _batchCount,  uint256 _batchPeriod) internal returns(uint8){
-        
+
         lockPools.push(PoolInfo({
-            name: _name,
-            startReleasingTime: _startReleasingTime,
-            batchPeriod: _batchPeriod,
-            batchCount: _batchCount,
-            totalLocked:0,
-            index:(uint8)(lockPools.length)
+        name: _name,
+        startReleasingTime: _startReleasingTime,
+        batchPeriod: _batchPeriod,
+        batchCount: _batchCount,
+        totalLocked:0,
+        index:(uint8)(lockPools.length)
         }));
 
         return (uint8)(lockPools.length) -1;
@@ -126,17 +126,18 @@ contract TokenVestingPools {
         lockPools[_pid].totalLocked = lockPools[_pid].totalLocked.add(userInfo[_pid][_beneficiary].lockedAmount);
     }
 
-     function claim(uint8 _pid) public returns(uint256 amount){
+    function claim(uint8 _pid) public returns(uint256 amount){
 
         // require(_pid < LockPoolsCount, "Can not claim from non existing pool"); // no need since getReleasableAmount will return 0
 
         amount = getReleasableAmount(_pid, msg.sender);
-        if (amount > 0){
+        require (amount > 0, "can not claimed 0 amount");
 
-			userInfo[_pid][msg.sender].withdrawn = userInfo[_pid][msg.sender].withdrawn.add(amount);
-			lockedToken.transfer(msg.sender,amount);		
-			emit Claim(_pid, msg.sender, amount);
-		}
+        userInfo[_pid][msg.sender].withdrawn = userInfo[_pid][msg.sender].withdrawn.add(amount);
+
+        lockedToken.transfer(msg.sender,amount);
+
+        emit Claim(_pid, msg.sender, amount);
     }
 
     function getReleasableAmount(uint8 _pid, address _beneficiary) public  view returns(uint256){
@@ -164,15 +165,15 @@ contract TokenVestingPools {
 
         // elapsedBatchCount = ((time - startReleasingTime) / batchPeriod) + 1
         uint256 elapsedBatchCount =
-                    _time.sub(lockPools[_pid].startReleasingTime)
-                    .div(lockPools[_pid].batchPeriod)
-                    .add(1);
+        _time.sub(lockPools[_pid].startReleasingTime)
+        .div(lockPools[_pid].batchPeriod)
+        .add(1);
 
         // vestedAmount = lockedAmount  * elapsedBatchCount / batchCount
         uint256  vestedAmount =
-                    lockedAmount
-                    .mul(elapsedBatchCount)
-                    .div(lockPools[_pid].batchCount);
+        lockedAmount
+        .mul(elapsedBatchCount)
+        .div(lockPools[_pid].batchCount);
 
         if(vestedAmount > lockedAmount){
             vestedAmount = lockedAmount;
@@ -181,13 +182,13 @@ contract TokenVestingPools {
         return vestedAmount;
     }
 
-    function getBeneficiaryInfo(uint8 _pid, address _beneficiary) public view 
-        returns(address beneficiary, 
-                uint256 totalLocked, 
-                uint256 withdrawn, 
-                uint256 releasableAmount, 
-                uint256 nextBatchTime, 
-                uint256 currentTime){
+    function getBeneficiaryInfo(uint8 _pid, address _beneficiary) public view
+    returns(address beneficiary,
+        uint256 totalLocked,
+        uint256 withdrawn,
+        uint256 releasableAmount,
+        uint256 nextBatchTime,
+        uint256 currentTime){
 
         beneficiary = _beneficiary;
         currentTime = getCurrentTime();
@@ -216,15 +217,15 @@ contract TokenVestingPools {
         }
 
         // find the next batch time
-         uint256 elapsedBatchCount =
-                    _time.sub(lockPools[_pid].startReleasingTime)
-                    .div(lockPools[_pid].batchPeriod)
-                    .add(1);
+        uint256 elapsedBatchCount =
+        _time.sub(lockPools[_pid].startReleasingTime)
+        .div(lockPools[_pid].batchPeriod)
+        .add(1);
 
         uint256 nextBatchTime =
-                    elapsedBatchCount
-                    .mul(lockPools[_pid].batchPeriod)
-                    .add(lockPools[_pid].startReleasingTime);
+        elapsedBatchCount
+        .mul(lockPools[_pid].batchPeriod)
+        .add(lockPools[_pid].startReleasingTime);
 
         return nextBatchTime;
 
@@ -235,12 +236,12 @@ contract TokenVestingPools {
     }
 
     function getPoolInfo(uint8 _pid) external view returns(
-                string memory name,
-                uint256 totalLocked,
-                uint256  startReleasingTime,
-                uint256  batchCount,
-                uint256  batchPeriodInDays){
-                    
+        string memory name,
+        uint256 totalLocked,
+        uint256  startReleasingTime,
+        uint256  batchCount,
+        uint256  batchPeriodInDays){
+
         if(_pid < lockPools.length){
             name = lockPools[_pid].name;
             totalLocked = lockPools[_pid].totalLocked;
@@ -268,19 +269,19 @@ contract RoomTeamLock is TokenVestingPools{
 
     constructor () public TokenVestingPools(0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64){
 
-	   // check https://www.epochconverter.com/ for timestamp
+        // check https://www.epochconverter.com/ for timestamp
 
-	   // Team tokens (10M) locked till Jan 01, 2022
-	   // and will be relesed each 3 months by 25%
-	   // 1640995200= January 1, 2022 12:00:00 AM GMT
-	   // team tokens: 10,000,000 Token
-	   uint8 teamLockPool = _addVestingPool("Team Lock" , 1640995200, 4, 90 days); 
+        // Team tokens (10M) locked till Jan 01, 2022
+        // and will be relesed each 3 months by 25%
+        // 1640995200= January 1, 2022 12:00:00 AM GMT
+        // team tokens: 10,000,000 Token
+        uint8 teamLockPool = _addVestingPool("Team Lock" , 1640995200, 4, 90 days);
 
-	   _addBeneficiary(teamLockPool, 0x4608f8245258e93aF27A15f9fBA17515149f4435,4000000); // 4,000,000 Tokens
-	   _addBeneficiary(teamLockPool, 0x5a4D85F03d9C45907617bABcDc7f4C5599c4cE19,2000000); // 2,000,000 Tokens
-	   _addBeneficiary(teamLockPool, 0x28eFeB6bf726bc9b1b2b989Cada5D9C95CfBb38C,1333334); // 1,333,334 Tokens
-	   _addBeneficiary(teamLockPool, 0x971945b040B126dCe5aD2982FBD2a72d4Ba3966c,1333333); // 1,333,333 Tokens
-	   _addBeneficiary(teamLockPool, 0xd558D2A872185C64DE4BF2a63Ad0Bc307f861997,1333333); // 1,333,333 Tokens
+        _addBeneficiary(teamLockPool, 0x4608f8245258e93aF27A15f9fBA17515149f4435,4000000); // 4,000,000 Tokens
+        _addBeneficiary(teamLockPool, 0x5a4D85F03d9C45907617bABcDc7f4C5599c4cE19,2000000); // 2,000,000 Tokens
+        _addBeneficiary(teamLockPool, 0x28eFeB6bf726bc9b1b2b989Cada5D9C95CfBb38C,1333334); // 1,333,334 Tokens
+        _addBeneficiary(teamLockPool, 0x971945b040B126dCe5aD2982FBD2a72d4Ba3966c,1333333); // 1,333,333 Tokens
+        _addBeneficiary(teamLockPool, 0xd558D2A872185C64DE4BF2a63Ad0Bc307f861997,1333333); // 1,333,333 Tokens
     }
-	
+
 }
