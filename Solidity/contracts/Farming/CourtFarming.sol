@@ -48,6 +48,7 @@ contract CourtFarming{
     event ClaimIncentiveReward(address indexed user, uint256 reward);
     event StakeRewards(address indexed user,uint256 amount, uint256 lockTime);
     event CourtStakeChanged(address oldAddress, address newAddress);
+    event FarmingParametersChanged(uint256 rewardPerBlock,uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime);
     
     constructor (uint256 rewardPerBlock,uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime) public{
        
@@ -61,8 +62,24 @@ contract CourtFarming{
         
         _incvLockTime = incvLockTime;
         _lastUpdateBlock = blockNumber();
-         
         
+    }
+    
+    function changeFarmingParameters(uint256 rewardPerBlock,uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime) public{
+        
+        require(msg.sender == _owner,"Called by oner only ");
+        _rewardPerBlock = rewardPerBlock.mul(1e18); // for math prec
+        _finishBlock = blockNumber().add(rewardBlockCount);
+        
+        _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
+        _incvFinishBlock = blockNumber().add(incvRewardBlockCount);
+        
+        _incvLockTime = incvLockTime;
+        _lastUpdateBlock = blockNumber();
+        
+        updateReward(address(0));
+        
+        emit FarmingParametersChanged(_rewardPerBlock,rewardBlockCount,_incvRewardPerBlock,incvRewardBlockCount,incvLockTime);
     }
     
     function updateReward(address account) public{
