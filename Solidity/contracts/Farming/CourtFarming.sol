@@ -291,6 +291,48 @@ contract CourtFarming{
         incvRewardPerBlock = _incvRewardPerBlock;
     }
     
+    
+    // expected reward,
+    // please note this is only expectaions, because total balance may changed during the day
+    function expectedRewardsToday(uint256 amount) external view returns(uint256 reward, uint256 incvReward){
+        // read version of update
+        
+        uint256 cnBlock = blockNumber();
+        uint256 prevAccRewardPerToken = _accRewardPerToken;
+        uint256 prevIncvAccRewardPerToken = _incvAccRewardPerToken;
+        
+        uint256 accRewardPerToken= _accRewardPerToken;
+        uint256 incvAccRewardPerToken = _incvAccRewardPerToken;
+         // update accRewardPerToken, incase totalSupply zero do not increment accRewardPerToken
+       
+        uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock: _finishBlock;
+        if(lastRewardBlock > _lastUpdateBlock){
+            accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
+                                .mul(_rewardPerBlock).div(totalSupply().add(amount))
+                                .add(accRewardPerToken);
+        }
+            
+        uint256 incvLastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock: _incvFinishBlock;
+        if(incvLastRewardBlock > _lastUpdateBlock){
+           incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
+                                    .mul(_incvRewardPerBlock).div(totalSupply().add(amount))
+                                    .add(incvAccRewardPerToken);
+        }
+        
+
+        uint256 rewardsPerBlock = amount
+                .mul(accRewardPerToken.sub(prevAccRewardPerToken))
+                .div(1e18);
+        
+        uint256 incvRewardsPerBlock = amount
+                .mul(incvAccRewardPerToken.sub(prevIncvAccRewardPerToken))
+                .div(1e18);
+        
+        // 5760 blocks per day
+        reward = rewardsPerBlock.mul(5760);
+        incvReward = incvRewardsPerBlock.mul(5760);
+    }
+    
     function balanceOf(address account) public view returns (uint256) {
         return _balances[account];
     }
