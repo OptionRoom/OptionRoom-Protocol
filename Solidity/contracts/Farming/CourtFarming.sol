@@ -68,6 +68,7 @@ contract CourtFarming{
     function changeFarmingParameters(uint256 rewardPerBlock,uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime) public{
         
         require(msg.sender == _owner,"Called by oner only ");
+		updateReward(address(0));
         _rewardPerBlock = rewardPerBlock.mul(1e18); // for math prec
         _finishBlock = blockNumber().add(rewardBlockCount);
         
@@ -75,9 +76,6 @@ contract CourtFarming{
         _incvFinishBlock = blockNumber().add(incvRewardBlockCount);
         
         _incvLockTime = incvLockTime;
-        _lastUpdateBlock = blockNumber();
-        
-        updateReward(address(0));
         
         emit FarmingParametersChanged(_rewardPerBlock,rewardBlockCount,_incvRewardPerBlock,incvRewardBlockCount,incvLockTime);
     }
