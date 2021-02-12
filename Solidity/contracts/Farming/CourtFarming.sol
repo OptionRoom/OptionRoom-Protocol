@@ -287,8 +287,8 @@ contract CourtFarming{
         cblockNumber = blockNumber();
         rewardFinshBlock =_finishBlock;
         incvRewardfinishBlock = _incvFinishBlock;
-        rewardPerBlock = _rewardPerBlock;
-        incvRewardPerBlock = _incvRewardPerBlock;
+        rewardPerBlock = _rewardPerBlock.div(1e18);
+        incvRewardPerBlock = _incvRewardPerBlock.div(1e18);
     }
     
     
