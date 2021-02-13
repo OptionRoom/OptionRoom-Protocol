@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "../RoomLock/TokenPoolsLockPortionRelease.sol";
+import "../RoomLock/TokenVestingPools.sol";
 import "../ERC20/RoomToken.sol";
 
 contract RoomLockSimulator is TokenVestingPools {
