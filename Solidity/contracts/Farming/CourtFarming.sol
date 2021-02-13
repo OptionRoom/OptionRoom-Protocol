@@ -5,14 +5,18 @@ import "../ERC20/IMERC20.sol";
 import "../../openzeppelin/contracts/math/SafeMath.sol";
 import "../../openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-
+// This contract will have three deployments with different configurations.
+// Reward "COURT" farming; from staking of the ROOM token.
+// Reward "COURT" farming; from staking of ROOM liquidity pool token (Liquidity pool for ROOM/ETH).
+// Reward "COURT" farming; from staking of COURT liquidity pool token (Liquidity pool for COURT/ETH).
 contract CourtFarming {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     // TODO: set the correct lpToken address
     IERC20 public lpToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71faa);
-    //TODO: set the correct Court Tokn address
+
+    //TODO: set the correct Court Token address
     IMERC20 public courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
 
     uint256 private _totalSupply;
