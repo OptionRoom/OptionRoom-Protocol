@@ -7,8 +7,8 @@ import "../../openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 // This contract will have three deployments with different configurations.
 // Reward "COURT" farming; from staking of the ROOM token.
-// Reward "COURT" farming; from staking of ROOM liquidity token ( Liquidity pool for ROOM/ETH ).
-// Reward "COURT" farming; from staking of COURT token
+// Reward "COURT" farming; from staking of ROOM liquidity pool token (Liquidity pool for ROOM/ETH).
+// Reward "COURT" farming; from staking of COURT liquidity pool token (Liquidity pool for COURT/ETH).
 contract CourtFarming {
 
     using SafeMath for uint256;
