@@ -288,9 +288,9 @@ contract CourtFarming {
         .add(_incvRewards[account]);
     }
 
-    function info() external view returns (uint256 cblockNumber, uint256 rewardPerBlock, uint256 rewardFinshBlock, uint256 incvRewardfinishBlock, uint256 incvRewardPerBlock) {
-        cblockNumber = blockNumber();
-        rewardFinshBlock = _finishBlock;
+    function info() external view returns (uint256 cBlockNumber, uint256 rewardPerBlock, uint256 rewardFinishBlock, uint256 incvRewardfinishBlock, uint256 incvRewardPerBlock) {
+        cBlockNumber = blockNumber();
+        rewardFinishBlock = _finishBlock;
         incvRewardfinishBlock = _incvFinishBlock;
         rewardPerBlock = _rewardPerBlock.div(1e18);
         incvRewardPerBlock = _incvRewardPerBlock.div(1e18);
