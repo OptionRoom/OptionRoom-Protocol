@@ -44,6 +44,10 @@ contract CourtFarming {
 
     address private _owner;
 
+    // To minimize the actions required to stake COURT, you just put the address
+    // of the contract that holds the governance COURT staking.
+    // TODO: Tareq Doufish, testing is required for the function
+    // that sets the address and do the actual transfer.
     address public courtStakeAddress;
 
     event Staked(address indexed user, uint256 amount);
