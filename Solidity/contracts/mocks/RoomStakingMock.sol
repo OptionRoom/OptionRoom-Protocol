@@ -12,6 +12,10 @@ contract RoomStakingMock is RoomStaking {
         roomToken = IERC20(address(roomTokenAddress));
     }
 
+    function setLpTokenAddress(address roomLPTokenAddress) public {
+        roomLPToken = IERC20(address(roomLPTokenAddress));
+    }
+
     function getCurrentTime() public view returns (uint256){
         return block.timestamp;
     }

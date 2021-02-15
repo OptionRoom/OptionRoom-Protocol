@@ -2,14 +2,15 @@ const { ethers } = require("hardhat")
 const { expect } = require("chai")
 const { time , getBigNumber} = require("./utilities")
 
-describe("RoomStaking", function () {
+describe("RoomLPStaking", function () {
 
     const rewardPerBlockInt = 1;
     const rewardPerBlock = getBigNumber(rewardPerBlockInt);
     const rewardBlockCount = 1000;
 
     before(async function () {
-        this.RoomStaking = await ethers.getContractFactory("RoomStakingMock")
+        this.RoomStaking = await ethers.getContractFactory("RoomStakingMock");
+        this.RoomLpToken = await ethers.getContractFactory("LPTokenMock");
         this.roomToken = await ethers.getContractFactory("RoomTokenMock");
         this.signers = await ethers.getSigners()
         this.alice = this.signers[0]
@@ -21,37 +22,41 @@ describe("RoomStaking", function () {
         this.staking = await this.RoomStaking.deploy(rewardPerBlock, rewardBlockCount, this.bob.address)
         await this.staking.deployed()
 
+        this.lpToken = await this.RoomLpToken.deploy()
+        await this.lpToken.deployed()
+
         this.room = await this.roomToken.deploy()
         await this.room.deployed()
 
+        this.staking.setLpTokenAddress(this.lpToken.address);
         this.staking.setRoomTokenAddress(this.room.address);
 
         //sending some room tokens to the accounts...
-        await this.room.transfer(this.alice.address, "1000")
-        await this.room.transfer(this.bob.address, getBigNumber(1000))
-        await this.room.transfer(this.carol.address, getBigNumber(1000))
+        await this.lpToken.transfer(this.alice.address, "1000")
+        await this.lpToken.transfer(this.bob.address, getBigNumber(1000))
+        await this.lpToken.transfer(this.carol.address, getBigNumber(1000))
 
-        await this.room.connect(this.bob).approve(this.staking.address,
+        await this.lpToken.connect(this.bob).approve(this.staking.address,
             getBigNumber(1000), { from: this.bob.address });
 
-        await this.room.connect(this.alice).approve(this.staking.address,
+        await this.lpToken.connect(this.alice).approve(this.staking.address,
             getBigNumber(1000), { from: this.alice.address });
 
-        await this.room.connect(this.carol).approve(this.staking.address,
+        await this.lpToken.connect(this.carol).approve(this.staking.address,
             getBigNumber(1000), { from: this.carol.address });
     })
 
-    it("Should allow staking from accounts and check supply decrease after staking ", async function () {
+    it("Should allow staking from accounts", async function () {
         let currentBlock = await this.staking.blockNumber();
-        let bobBalance = await this.room.balanceOf(this.bob.address);
+        let bobBalance = await this.lpToken.balanceOf(this.bob.address);
         expect(bobBalance).to.equal(getBigNumber(1000));
 
         await this.staking.connect(this.bob).stake(getBigNumber(1));
-        bobBalance = await this.room.balanceOf(this.bob.address);
+        bobBalance = await this.lpToken.balanceOf(this.bob.address);
         expect(bobBalance).to.equal(getBigNumber(999));
     })
 
-    it("Should stake with the amount of steps because we have only one accout staking ", async function () {
+    it("Should be able to stake and check rewards for one account ", async function () {
         await this.staking.connect(this.bob).stake(getBigNumber(1));
         let currentBlock = await this.staking.blockNumber();
         await time.advanceBlockTo(Number(currentBlock) + Number(10));
@@ -59,8 +64,7 @@ describe("RoomStaking", function () {
         expect(reward).to.equal(getBigNumber(10));
     })
 
-
-    it("Should check stake amount for multiple accounts ", async function () {
+    it("Should be able to stake and check rewards for multiple accounts ", async function () {
         let currentBlock = await this.staking.blockNumber();
         await this.staking.connect(this.bob).stake(getBigNumber(1));
         await this.staking.connect(this.carol).stake(getBigNumber(1));
@@ -76,7 +80,7 @@ describe("RoomStaking", function () {
         expect(carolReward).to.equal(getBigNumber(5));
     })
 
-    it("Should stake and unstake and check corrent amounts ! ", async function () {
+    it("Should stake and unstake and check correct amounts ! ", async function () {
         let currentBlock = await this.staking.blockNumber();
         await this.staking.connect(this.bob).stake(getBigNumber(1));
         await this.staking.connect(this.carol).stake(getBigNumber(1));
