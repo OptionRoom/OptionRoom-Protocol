@@ -16,6 +16,11 @@ contract RoomStakingMock is RoomStaking {
         roomLPToken = IERC20(address(roomLPTokenAddress));
     }
 
+
+    function getWalletBalance(address walletAddress) external view returns (uint256 walletBalanace) {
+        walletBalanace =  roomToken.balanceOf(walletAddress);
+    }
+
     function getCurrentTime() public view returns (uint256){
         return block.timestamp;
     }
