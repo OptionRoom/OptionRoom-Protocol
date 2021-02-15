@@ -140,15 +140,20 @@ contract RoomStaking {
 
         // TODO: chose if or require
         if (reward > 0) {
-            _rewards[msg.sender] = 0;
             uint256 walletBalanace = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
             if (walletBalanace < reward) {
+                // This fails, and we send reason 1 for the UI
+                // to display a meaningful message for the user.
                 // 1 means the wallet is empty.
                 reason = 1;
                 emit RoomTokenWalletEmpty();
+            } else{
+                // We will transfer and then empty the rewards
+                // for the sender.
+                _rewards[msg.sender] = 0;
+                roomToken.transferFrom(_roomTokenRewardsReservoirAddress, msg.sender, reward);
+                emit ClaimReward(msg.sender, reward);
             }
-            roomToken.transferFrom(_roomTokenRewardsReservoirAddress, msg.sender, reward);
-            emit ClaimReward(msg.sender, reward);
         }
         return (reward, reason);
     }
