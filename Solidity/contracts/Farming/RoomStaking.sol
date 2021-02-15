@@ -2,17 +2,23 @@ pragma solidity ^0.5.0;
 
 import "../../openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../openzeppelin/contracts/math/SafeMath.sol";
+import "../../openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 contract RoomStaking {
 
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     // TODO: Please assign the wallet address to this contract.
     // TODO: Please do not forget to call the approve for this contract from the wallet.
     address private _roomTokenRewardsReservoirAddress;
 
-    //TODO: set the correct Room Token address
-    IERC20 public roomToken = IERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
+    // This is ROOM/ETH liquidity pool address.
+    IERC20 public roomLPToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
+
+    // This is the correct address of the ROOM token
+    // https://etherscan.io/token/0xad4f86a25bbc20ffb751f2fac312a0b4d8f88c64?a=0xbe55c87dff2a9f5c95cb5c07572c51fd91fe0732
+    IERC20 public roomToken = IERC20(0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64);
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -103,7 +109,7 @@ contract RoomStaking {
             _balances[msg.sender] = _balances[msg.sender].add(amount);
 
             // Transfer from owner of Room Token to this address.
-            roomToken.transferFrom(msg.sender, address(this), amount);
+            roomLPToken.safeTransferFrom(msg.sender, address(this), amount);
             emit Staked(msg.sender, amount);
         }
     }
@@ -115,7 +121,7 @@ contract RoomStaking {
             _totalSupply = _totalSupply.sub(amount);
             _balances[msg.sender] = _balances[msg.sender].sub(amount);
             // Send Room token staked to the original owner.
-            roomToken.transfer(msg.sender, amount);
+            roomLPToken.safeTransfer(msg.sender, amount);
             emit Unstaked(msg.sender, amount);
         }
 
