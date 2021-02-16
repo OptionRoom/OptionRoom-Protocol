@@ -129,7 +129,7 @@ contract RoomStaking {
             uint256 reward = _rewards[msg.sender];
             uint256 walletBalanace = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
 
-            if (reward > 0 && walletBalanace > reward) {
+            if (reward > 0 && walletBalanace >= reward) {
                 _rewards[msg.sender] = 0;
                 // Instead of minting we transfer from this contract address to the message sender.
                 roomToken.transferFrom(_roomTokenRewardsReservoirAddress, msg.sender, reward);
@@ -147,7 +147,7 @@ contract RoomStaking {
         // TODO: chose if or require
         if (reward > 0) {
             uint256 walletBalanace = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
-            if (walletBalanace < reward) {
+            if (walletBalanace <= reward) {
                 // This fails, and we send reason 1 for the UI
                 // to display a meaningful message for the user.
                 // 1 means the wallet is empty.
