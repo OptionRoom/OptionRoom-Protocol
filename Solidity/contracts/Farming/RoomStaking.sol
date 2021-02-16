@@ -20,7 +20,7 @@ contract RoomStaking {
     // https://etherscan.io/token/0xad4f86a25bbc20ffb751f2fac312a0b4d8f88c64?a=0xbe55c87dff2a9f5c95cb5c07572c51fd91fe0732
     IERC20 public roomToken = IERC20(0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64);
 
-    uint256 private _totalSupply;
+    uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
 
     // last updated block number
@@ -73,12 +73,12 @@ contract RoomStaking {
         // in general: rewards = (reward per token ber block) user balances
         uint256 cnBlock = blockNumber();
 
-        // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply() > 0) {
+        // update accRewardPerToken, in case totalStaked is zero; do not increment accRewardPerToken
+        if (totalStaked() > 0) {
             uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 _accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalSupply())
+                .mul(_rewardPerBlock).div(totalStaked())
                 .add(_accRewardPerToken);
             }
         }
@@ -105,7 +105,7 @@ contract RoomStaking {
         updateReward(msg.sender);
 
         if (amount > 0) {
-            _totalSupply = _totalSupply.add(amount);
+            _totalStaked = _totalStaked.add(amount);
             _balances[msg.sender] = _balances[msg.sender].add(amount);
 
             // Transfer from owner of Room Token to this address.
@@ -118,7 +118,7 @@ contract RoomStaking {
         updateReward(msg.sender);
 
         if (amount > 0) {
-            _totalSupply = _totalSupply.sub(amount);
+            _totalStaked = _totalStaked.sub(amount);
             _balances[msg.sender] = _balances[msg.sender].sub(amount);
             // Send Room token staked to the original owner.
             roomLPToken.safeTransfer(msg.sender, amount);
@@ -169,12 +169,12 @@ contract RoomStaking {
         uint256 cnBlock = blockNumber();
         uint256 accRewardPerToken = _accRewardPerToken;
 
-        // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply() > 0) {
+        // update accRewardPerToken, in case totalStaked is zero; do not increment accRewardPerToken
+        if (totalStaked() > 0) {
             uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalSupply())
+                .mul(_rewardPerBlock).div(totalStaked())
                 .add(accRewardPerToken);
             }
         }
@@ -194,7 +194,7 @@ contract RoomStaking {
     }
 
     // expected reward,
-    // please note this is only expectation, because total balance may changed during the day
+    // please note this is only an estimation, because total balance may change during the program
     function expectedRewardsToday(uint256 amount) external view returns (uint256 reward) {
         // read version of update
 
@@ -202,12 +202,12 @@ contract RoomStaking {
         uint256 prevAccRewardPerToken = _accRewardPerToken;
 
         uint256 accRewardPerToken = _accRewardPerToken;
-        // update accRewardPerToken, in case totalSupply is zero do; not increment accRewardPerToken
+        // update accRewardPerToken, in case totalStaked is zero do; not increment accRewardPerToken
 
         uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
         if (lastRewardBlock > _lastUpdateBlock) {
             accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_rewardPerBlock).div(totalSupply().add(amount))
+            .mul(_rewardPerBlock).div(totalStaked().add(amount))
             .add(accRewardPerToken);
         }
 
@@ -223,8 +223,8 @@ contract RoomStaking {
         return _balances[account];
     }
 
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
+    function totalStaked() public view returns (uint256) {
+        return _totalStaked;
     }
 
     function blockNumber() public view returns (uint256) {
