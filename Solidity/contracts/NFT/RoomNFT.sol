@@ -33,13 +33,13 @@ contract RoomNFT is ERC1155 {
 
         requiredRoomBurned[TIER1] = 500e18;
         requiredRoomBurned[TIER2] = 120e18;
-        // + burn 1 tire1
+        // + burn 1 tier1
         requiredRoomBurned[TIER3] = 120e18;
-        // + burn 1 tire2
-        requiredRoomBurned[TIER4] = 120e18;
-        // + burn 1 tire3
-        requiredRoomBurned[TIER5] = 160e18;
-        // + burn 1 tire4
+        // + burn 1 tier2
+        requiredRoomBurned[TIER4] = 160e18;
+        // + burn 1 tier3
+        requiredRoomBurned[TIER5] = 350e18;
+        // + burn 1 tier4
     }
 
     function burn(address account, uint256 id, uint256 value) internal virtual {
@@ -51,16 +51,28 @@ contract RoomNFT is ERC1155 {
         _totalStaked[id] = _totalStaked[id].sub(value);
         _burn(account, id, value);
     }
+    
+    function mintTier(uint256 id) public returns(bool){
+        require(id < 5, "unsupported id");
+        require(balanceOf(_msgSender(), id) == 0, "account can not mint while holding nft");
+        
+        uint256 newTotalStaked = _totalStaked[id].add(1);
+        if(newTotalStaked > _capital[id]){
+            return false;
+        }
+        
+        if (id > 0) {
+            // burn previous tier
+            burn(_msgSender(), id.sub(1), 1);
+        }
 
-    function mint(address account, uint256 id, uint256 amount, bytes memory data) internal {
-        uint256 newTotalStaked = _totalStaked[id].add(amount);
-        require(newTotalStaked <= _capital[id], "total supply exceeds capital");
-        _totalStaked[id] = newTotalStaked;
-
-        _mint(account, id, amount, data);
+        roomToken.transferFrom(_msgSender(), roomBurnAdd, requiredRoomBurned[id]);
+        
+        _mint(_msgSender(), id, 1, "");
     }
 
-    function totalStaked(uint256 id) public view returns (uint256) {
+
+    function tootalSupply(uint256 id) public view returns (uint256) {
         return _totalStaked[id];
     }
 
@@ -72,46 +84,7 @@ contract RoomNFT is ERC1155 {
         return _capital[id].sub(_totalStaked[id]);
     }
 
-    function mintTier(uint256 id) public {
-        require(id < 5, "unsupported id");
+    
 
-        if (id > 0) {
-            burn(_msgSender(), id.sub(1), 1);
-            // burn previous tier
-        }
-
-        roomToken.transferFrom(_msgSender(), roomBurnAdd, requiredRoomBurned[id]);
-        mint(_msgSender(), id, 1, "");
-    }
-
-    function mintStatus(address account, uint256 id) public view returns (bool canMint, string memory reason){
-        uint256 availableToMint = checkAvailableToMint(id);
-        if (availableToMint == 0) {
-            canMint = false;
-            reason = "no available";
-            return (canMint, reason);
-        }
-
-        if (id > 0) {
-            if (balanceOf(account, id.sub(1)) == 0) {
-                canMint = false;
-                reason = "account has no previous tier";
-                return (canMint, reason);
-            }
-
-            if (!isApprovedForAll(account, address(this))) {
-                canMint = false;
-                reason = "account did not approve this";
-                return (canMint, reason);
-            }
-        }
-
-        if (roomToken.balanceOf(account) < requiredRoomBurned[id]) {
-            canMint = false;
-            reason = "account do not have the required ROOM tokens amount";
-            return (canMint, reason);
-        }
-
-        canMint = true;
-    }
+    
 }
