@@ -8,7 +8,7 @@ import "./IERC20.sol";
 // This is OptionNFT
 contract RoomNFT is ERC1155 {
 
-    mapping(uint256 => uint256) private _totalSupplay;
+    mapping(uint256 => uint256) private _totalStaked;
     mapping(uint256 => uint256) private _capital;
     mapping(uint256 => uint256) public requiredRoomBurned;
 
@@ -48,31 +48,29 @@ contract RoomNFT is ERC1155 {
             "ERC1155: caller is not owner nor approved"
         );
 
-        _totalSupplay[id] = _totalSupplay[id].sub(value);
+        _totalStaked[id] = _totalStaked[id].sub(value);
         _burn(account, id, value);
     }
 
     function mint(address account, uint256 id, uint256 amount, bytes memory data) internal {
-
-        uint256 newTotalSupply = _totalSupplay[id].add(amount);
-        require(newTotalSupply <= _capital[id], "total supply exceeds capital");
-        _totalSupplay[id] = newTotalSupply;
+        uint256 newTotalStaked = _totalStaked[id].add(amount);
+        require(newTotalStaked <= _capital[id], "total supply exceeds capital");
+        _totalStaked[id] = newTotalStaked;
 
         _mint(account, id, amount, data);
     }
 
-    function totalSupply(uint256 id) public view returns (uint256) {
-        return _totalSupplay[id];
+    function totalStaked(uint256 id) public view returns (uint256) {
+        return _totalStaked[id];
     }
 
     function capital(uint256 id) public view returns (uint256) {
         return _capital[id];
     }
 
-    function CheckAvilableToMint(uint256 id) public view returns (uint256) {
-        return _capital[id].sub(_totalSupplay[id]);
+    function checkAvailableToMint(uint256 id) public view returns (uint256) {
+        return _capital[id].sub(_totalStaked[id]);
     }
-
 
     function mintTier(uint256 id) public {
         require(id < 5, "unsupported id");
@@ -86,12 +84,11 @@ contract RoomNFT is ERC1155 {
         mint(_msgSender(), id, 1, "");
     }
 
-
-    function CheckCanMint(address account, uint256 id) public view returns (bool canMint, string memory reason){
-        uint256 avilableToMint = CheckAvilableToMint(id);
-        if (avilableToMint == 0) {
+    function mintStatus(address account, uint256 id) public view returns (bool canMint, string memory reason){
+        uint256 availableToMint = checkAvailableToMint(id);
+        if (availableToMint == 0) {
             canMint = false;
-            reason = "no available kkkk";
+            reason = "no available";
             return (canMint, reason);
         }
 
@@ -104,18 +101,17 @@ contract RoomNFT is ERC1155 {
 
             if (!isApprovedForAll(account, address(this))) {
                 canMint = false;
-                reason = "account dosnot approve this";
+                reason = "account did not approve this";
                 return (canMint, reason);
             }
         }
 
         if (roomToken.balanceOf(account) < requiredRoomBurned[id]) {
             canMint = false;
-            reason = "account has not the required ROOM amount";
+            reason = "account do not have the required ROOM tokens amount";
             return (canMint, reason);
         }
 
         canMint = true;
-
     }
 }
