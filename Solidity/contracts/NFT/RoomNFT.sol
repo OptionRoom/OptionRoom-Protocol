@@ -8,7 +8,7 @@ import "./IERC20.sol";
 // This is OptionNFT
 contract RoomNFT is ERC1155 {
 
-    mapping(uint256 => uint256) private _totalStaked;
+    mapping(uint256 => uint256) private _totalSupply;
     mapping(uint256 => uint256) private _capital;
     mapping(uint256 => uint256) public requiredRoomBurned;
 
@@ -32,48 +32,47 @@ contract RoomNFT is ERC1155 {
         _capital[TIER5] = 8;
 
         requiredRoomBurned[TIER1] = 500e18;
-        requiredRoomBurned[TIER2] = 120e18;
-        // + burn 1 tier1
-        requiredRoomBurned[TIER3] = 120e18;
-        // + burn 1 tier2
-        requiredRoomBurned[TIER4] = 160e18;
-        // + burn 1 tier3
-        requiredRoomBurned[TIER5] = 350e18;
-        // + burn 1 tier4
+        requiredRoomBurned[TIER2] = 120e18; // + burn 1 tier1
+        requiredRoomBurned[TIER3] = 120e18; // + burn 1 tier2
+        requiredRoomBurned[TIER4] = 160e18; // + burn 1 tier3
+        requiredRoomBurned[TIER5] = 350e18; // + burn 1 tier4
     }
 
-    function burn(address account, uint256 id, uint256 value) internal virtual {
+    function burn(address account, uint256 id, uint256 value) public virtual {
         require(
             account == _msgSender() || isApprovedForAll(account, _msgSender()),
             "ERC1155: caller is not owner nor approved"
         );
 
-        _totalStaked[id] = _totalStaked[id].sub(value);
+        _totalSupply[id] = _totalSupply[id].sub(value);
         _burn(account, id, value);
     }
-    
+
     function mintTier(uint256 id) public returns(bool){
         require(id < 5, "unsupported id");
         require(balanceOf(_msgSender(), id) == 0, "account can not mint while holding nft");
-        
-        uint256 newTotalStaked = _totalStaked[id].add(1);
-        if(newTotalStaked > _capital[id]){
+
+        uint256 newTotalSupply = _totalSupply[id].add(1);
+        if(newTotalSupply > _capital[id]){
             return false;
         }
-        
+
+        _totalSupply[id] = newTotalSupply;
+
         if (id > 0) {
             // burn previous tier
+            require(balanceOf(_msgSender(), id - 1 ) > 0, "You should have previous tier");
             burn(_msgSender(), id.sub(1), 1);
         }
 
         roomToken.transferFrom(_msgSender(), roomBurnAdd, requiredRoomBurned[id]);
-        
+
         _mint(_msgSender(), id, 1, "");
+        return true;
     }
 
-
-    function tootalSupply(uint256 id) public view returns (uint256) {
-        return _totalStaked[id];
+    function totalSupply(uint256 id) public view returns (uint256) {
+        return _totalSupply[id];
     }
 
     function capital(uint256 id) public view returns (uint256) {
@@ -81,10 +80,10 @@ contract RoomNFT is ERC1155 {
     }
 
     function checkAvailableToMint(uint256 id) public view returns (uint256) {
-        return _capital[id].sub(_totalStaked[id]);
+        return _capital[id].sub(_totalSupply[id]);
     }
 
-    
 
-    
+
+
 }
