@@ -24,6 +24,8 @@ contract RoomNFT is ERC1155 {
 
     address constant roomBurnAdd = address(0x000000000000000000000000000000000000dEaD);
 
+    event TierMinted(bool status, uint256 amount);
+
     constructor() public ERC1155("uri"){
         _capital[TIER1] = 50;
         _capital[TIER2] = 40;
@@ -54,6 +56,7 @@ contract RoomNFT is ERC1155 {
 
         uint256 newTotalSupply = _totalSupply[id].add(1);
         if(newTotalSupply > _capital[id]){
+            emit TierMinted(false,id);
             return false;
         }
 
@@ -68,6 +71,7 @@ contract RoomNFT is ERC1155 {
         roomToken.transferFrom(_msgSender(), roomBurnAdd, requiredRoomBurned[id]);
 
         _mint(_msgSender(), id, 1, "");
+        emit TierMinted(true, id);
         return true;
     }
 
@@ -82,8 +86,4 @@ contract RoomNFT is ERC1155 {
     function checkAvailableToMint(uint256 id) public view returns (uint256) {
         return _capital[id].sub(_totalSupply[id]);
     }
-
-
-
-
 }

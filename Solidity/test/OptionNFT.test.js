@@ -1,6 +1,6 @@
-const { ethers } = require("hardhat")
-const { expect } = require("chai")
-const { time , getBigNumber} = require("./utilities")
+const {ethers} = require("hardhat")
+const {expect} = require("chai")
+const {time, getBigNumber} = require("./utilities")
 var abi = require('ethereumjs-abi')
 
 describe("OptionNFT", function () {
@@ -27,7 +27,7 @@ describe("OptionNFT", function () {
         // Putting alice as the wallet...
         await this.room.transfer(this.dev.address, getBigNumber(1000000))
         await this.room.connect(this.dev).approve(this.staking.address,
-            getBigNumber(1000000), { from: this.dev.address });
+            getBigNumber(1000000), {from: this.dev.address});
 
         //sending some room tokens to the accounts...
         await this.room.transfer(this.alice.address, "1000")
@@ -35,31 +35,31 @@ describe("OptionNFT", function () {
         await this.room.transfer(this.carol.address, getBigNumber(1000))
 
         await this.room.connect(this.bob).approve(this.staking.address,
-            getBigNumber(50000), { from: this.bob.address });
+            getBigNumber(50000), {from: this.bob.address});
 
         await this.room.connect(this.alice).approve(this.staking.address,
-            getBigNumber(1000), { from: this.alice.address });
+            getBigNumber(1000), {from: this.alice.address});
 
         await this.room.connect(this.carol).approve(this.staking.address,
-            getBigNumber(1000), { from: this.carol.address });
+            getBigNumber(1000), {from: this.carol.address});
 
     })
 
     it("Should return capitals for the pools", async function () {
-        let capital = await this.staking.capital(0 );
+        let capital = await this.staking.capital(0);
         expect(capital).to.equal(50);
-        capital = await this.staking.capital(1 );
+        capital = await this.staking.capital(1);
         expect(capital).to.equal(40);
-        capital = await this.staking.capital(2 );
+        capital = await this.staking.capital(2);
         expect(capital).to.equal(30);
-        capital = await this.staking.capital(3 );
+        capital = await this.staking.capital(3);
         expect(capital).to.equal(20);
-        capital = await this.staking.capital(4 );
+        capital = await this.staking.capital(4);
         expect(capital).to.equal(8);
     })
 
     it("Should return capitals for the first pool", async function () {
-        let capital = await this.staking.checkAvailableToMint(0 );
+        let capital = await this.staking.checkAvailableToMint(0);
         expect(capital).to.equal(50);
     })
 
@@ -80,12 +80,25 @@ describe("OptionNFT", function () {
 
     it("Should be able to mint if I transfer the ", async function () {
         let index = 0;
-        for (var i = 0; i <= 50 ; i++) {
-            index ++;
-            console.log(index);
-            let minted = await this.staking.connect(this.bob).mintTier(0);
+        for (var i = 0; i < 50; i++) {
+            index++;
+            await this.staking.connect(this.bob).mintTier(0);
             await this.staking.connect(this.bob).safeTransferFrom(this.bob.address,
                 this.alice.address, 0, 1, []);
         }
+
+        let balanceOfBob = await this.staking.balanceOf(this.bob.address, 0);
+        let balanaceOfAlice = await this.staking.balanceOf(this.alice.address, 0);
+        expect(balanceOfBob).to.equal(0);
+        expect(balanaceOfAlice).to.equal(50);
+    })
+
+    it("Should mint if I transfer to another account", async function () {
+        await this.staking.connect(this.bob).mintTier(0);
+        await this.staking.connect(this.bob).safeTransferFrom(this.bob.address,
+            this.alice.address, 0, 1, []);
+
+        await expect(this.staking.connect(this.bob).mintTier(1)).to.be.revertedWith("You should have previous tier")
+        await expect(this.staking.connect(this.alice).mintTier(0)).to.be.revertedWith("account can not mint while holding nft")
     })
 })
