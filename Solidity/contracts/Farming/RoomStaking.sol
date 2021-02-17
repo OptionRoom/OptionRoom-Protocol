@@ -12,7 +12,8 @@ contract RoomStaking {
     // TODO: Please assign the wallet address to this contract.
     // TODO: Please do not forget to call the approve for this contract from the wallet.
     address private _roomTokenRewardsReservoirAddress;
-
+    address private _owner;
+    
     // This is ROOM/ETH liquidity pool address.
     IERC20 public roomLPToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
 
@@ -21,20 +22,20 @@ contract RoomStaking {
     IERC20 public roomToken = IERC20(0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64);
 
     uint256 private _totalStaked;
-    mapping(address => uint256) private _balances;
 
     // last updated block number
     uint256 private _lastUpdateBlock;
 
     // normal rewards
     uint256 private  _rewardPerBlock;   // reward per block
-    uint256 private _accRewardPerToken; // accumulative reward per token
+    uint256 private  _accRewardPerToken; // accumulative reward per token
+    uint256 public  finishBlock; // finish rewarding block number
+    uint256 public  endTime;
+
     mapping(address => uint256) private _rewards; // rewards balances
     mapping(address => uint256) private _prevAccRewardPerToken; // previous accumulative reward per token (for a user)
-    uint256 public _finishBlock; // finish rewarding block number
-
-    address private _owner;
-
+    mapping(address => uint256) private _balances;
+    
     event RoomTokenWalletEmpty();
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
@@ -49,10 +50,10 @@ contract RoomStaking {
 
         _roomTokenRewardsReservoirAddress = roomTokenRewardsReservoirAddress;
 
-        _rewardPerBlock = rewardPerBlock.mul(1e18);
-        // for math precision
-        _finishBlock = blockNumber().add(rewardBlockCount);
-
+        _rewardPerBlock = rewardPerBlock.mul(1e18); // for math precisio
+        
+        finishBlock = blockNumber().add(rewardBlockCount);
+        endTime = finishBlock.sub(blockNumber()).mul(15).add(block.timestamp);
         _lastUpdateBlock = blockNumber();
     }
 
@@ -60,9 +61,10 @@ contract RoomStaking {
 
         require(msg.sender == _owner, "can be called by owner only");
         updateReward(address(0));
-        _rewardPerBlock = rewardPerBlock.mul(1e18);
-        // for math precision
-        _finishBlock = blockNumber().add(rewardBlockCount);
+        _rewardPerBlock = rewardPerBlock.mul(1e18); // for math precision
+        
+        finishBlock = blockNumber().add(rewardBlockCount);
+        endTime = finishBlock.sub(blockNumber()).mul(15).add(block.timestamp);
         _roomTokenRewardsReservoirAddress = roomTokenRewardsReservoirAddress;
 
         emit StakingParametersChanged(_rewardPerBlock, rewardBlockCount);
@@ -75,7 +77,7 @@ contract RoomStaking {
 
         // update accRewardPerToken, in case totalStaked is zero; do not increment accRewardPerToken
         if (totalStaked() > 0) {
-            uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
+            uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 _accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
                 .mul(_rewardPerBlock).div(totalStaked())
@@ -170,7 +172,7 @@ contract RoomStaking {
 
         // update accRewardPerToken, in case totalStaked is zero; do not increment accRewardPerToken
         if (totalStaked() > 0) {
-            uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
+            uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
                 .mul(_rewardPerBlock).div(totalStaked())
@@ -184,11 +186,16 @@ contract RoomStaking {
         .add(_rewards[account]);
     }
 
-    function info() external view returns (uint256 cBlockNumber, uint256 rewardPerBlock,
-            uint256 rewardFinishBlock, uint256 walletBalance) {
+    function info() external view returns (
+                                uint256 cBlockNumber, 
+                                uint256 rewardPerBlock,
+                                uint256 rewardFinishBlock,
+                                uint256 rewardEndTime,
+                                uint256 walletBalance) {
         cBlockNumber = blockNumber();
-        rewardFinishBlock = _finishBlock;
+        rewardFinishBlock = finishBlock;
         rewardPerBlock = _rewardPerBlock.div(1e18);
+        rewardEndTime = endTime;
         walletBalance = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
     }
 
@@ -203,7 +210,7 @@ contract RoomStaking {
         uint256 accRewardPerToken = _accRewardPerToken;
         // update accRewardPerToken, in case totalStaked is zero do; not increment accRewardPerToken
 
-        uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
+        uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
         if (lastRewardBlock > _lastUpdateBlock) {
             accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
             .mul(_rewardPerBlock).div(totalStaked().add(amount))
