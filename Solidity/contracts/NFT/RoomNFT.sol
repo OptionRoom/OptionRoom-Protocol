@@ -86,4 +86,8 @@ contract RoomNFT is ERC1155 {
     function checkAvailableToMint(uint256 id) public view returns (uint256) {
         return _capital[id].sub(_totalSupply[id]);
     }
+    
+    function tokenURI(uint256 _optionId) external view returns (string memory){
+        uri(_optionId);
+    }
 }
