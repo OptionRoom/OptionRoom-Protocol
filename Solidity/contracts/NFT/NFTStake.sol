@@ -48,17 +48,18 @@ contract NFTStake is IERC1155Receiver {
         return true;
     }
 
-    constructor () public {
+    constructor (address rewardWallet) public {
         _owner = msg.sender;
-        _rewardPerBlock[0] = 0;
+        
+        _roomTokenRewardsReservoirAddress = rewardWallet;
 
         uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
         
-        uint256 totalRewards0 = 24937e18; // total rewards for pool0 (Tier1)
-        uint256 totalRewards1 = 30922e18; // total rewards for pool1 (Tier2)
-        uint256 totalRewards2 = 36907e18; // total rewards for pool2 (Tier3)
-        uint256 totalRewards3 = 44887e18; // total rewards for pool3 (Tier4)
-        uint256 totalRewards4 = 62344e18; // total rewards for pool4 (Tier5)
+        uint256 totalRewards0 = 24937e18; // 24,937 room Token total rewards for pool0 (Tier1)
+        uint256 totalRewards1 = 30922e18; // 30,922 room Token total rewards for pool1 (Tier2)
+        uint256 totalRewards2 = 36907e18; // 36,907 room Token total rewards for pool2 (Tier3)
+        uint256 totalRewards3 = 44887e18; // 44,887 room Token total rewards for pool3 (Tier4)
+        uint256 totalRewards4 = 62344e18; // 62,344 room Token total rewards for pool4 (Tier5)
         
         _finishBlock = blockNumber().add(rewardBlockCount);
        

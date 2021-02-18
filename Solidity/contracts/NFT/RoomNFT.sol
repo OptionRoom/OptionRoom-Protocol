@@ -26,7 +26,7 @@ contract RoomNFT is ERC1155 {
 
     event TierMinted(bool status, uint256 amount);
 
-    constructor() public ERC1155("uri"){
+    constructor() public ERC1155("https://s3.amazonaws.com/www.optionroom.finance/nfts/{id}.json"){
         _capital[TIER1] = 50;
         _capital[TIER2] = 40;
         _capital[TIER3] = 30;
@@ -87,7 +87,7 @@ contract RoomNFT is ERC1155 {
         return _capital[id].sub(_totalSupply[id]);
     }
     
-    function tokenURI(uint256 _optionId) external view returns (string memory){
-        uri(_optionId);
+    function tokenURI(uint256 id) external view returns (string memory){
+        uri(id);
     }
 }
