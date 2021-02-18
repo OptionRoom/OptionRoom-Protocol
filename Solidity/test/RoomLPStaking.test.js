@@ -145,5 +145,18 @@ describe("RoomLPStaking", function () {
         expect(devRoomWalletBalanace).to.equal(getBigNumber(11));
     })
 
-
+    // it("Should revert if you try to unstake while you do not have anything staked ", async function () {
+    //     await this.staking.connect(this.bob).setOrgContractValues();
+    //     let rewardValue = await this.staking.connect(this.bob).getRewradPerBlock();
+    //
+    //     let currentBlock = await this.staking.blockNumber();
+    //     await this.staking.connect(this.bob).stake(getBigNumber(1));
+    //     currentBlock = await this.staking.blockNumber();
+    //
+    //     await time.advanceBlockTo(Number(currentBlock) + Number(1));
+    //
+    //     let bobReward = await this.staking.rewards(this.bob.address);
+    //     bobReward = (parseFloat(bobReward.toString()).toPrecision(19))/1e18;
+    //     expect(bobReward).to.equal(0.23148148148148148);
+    // })
 })
