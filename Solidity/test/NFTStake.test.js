@@ -151,4 +151,30 @@ describe("OptionNFT", function () {
     it("Should revert if you try to unstake while you do not have anything staked ", async function () {
         await expect(this.staking.connect(this.bob).unstake(0, getBigNumber(1), true)).to.be.revertedWith("subtraction overflow")
     })
+
+    it("Should check values of the org contract values", async function () {
+        await this.staking.connect(this.bob).assignOrgValues();
+        let rewardValue = await this.staking.connect(this.bob).getRewardValueForPool1();
+
+        await this.staking.connect(this.bob).stake(0, getBigNumber(1));
+        let currentBlock = await this.staking.blockNumber();
+        await time.advanceBlockTo(Number(currentBlock) + Number(1));
+
+        let reward = await this.staking.rewards(0, this.bob.address);
+        reward = (parseFloat(reward.toString()).toPrecision(19))/1e18;
+        expect(reward).to.equal(0.024051890432098762);
+    })
+
+    it("Should check values of the org contract values", async function () {
+        await this.staking.connect(this.bob).assignOrgValues();
+        let rewardValue = await this.staking.connect(this.bob).getRewardValueForPool1();
+
+        await this.staking.connect(this.bob).stake(0, getBigNumber(1));
+        let currentBlock = await this.staking.blockNumber();
+        await time.advanceBlockTo(Number(currentBlock) + Number(1));
+
+        let reward = await this.staking.rewards(0, this.bob.address);
+        reward = (parseFloat(reward.toString()).toPrecision(19))/1e18;
+        expect(reward).to.equal(0.024051890432098762);
+    })
 })
