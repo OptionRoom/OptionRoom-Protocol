@@ -5,7 +5,7 @@ import "../../contracts/Farming/RoomStaking.sol";
 contract RoomStakingMock is RoomStaking {
 
     constructor(uint256 rewardPerBlock, uint256 rewardBlockCount, address walletAddress)
-                public RoomStaking(rewardPerBlock, rewardBlockCount, walletAddress) {
+    public RoomStaking(rewardPerBlock, rewardBlockCount, walletAddress) {
     }
 
     function setRoomTokenAddress(address roomTokenAddress) public {
@@ -18,11 +18,10 @@ contract RoomStakingMock is RoomStaking {
 
 
     function getWalletBalance(address walletAddress) external view returns (uint256 walletBalanace) {
-        walletBalanace =  roomToken.balanceOf(walletAddress);
+        walletBalanace = roomToken.balanceOf(walletAddress);
     }
 
     function getCurrentTime() public view returns (uint256){
         return block.timestamp;
     }
-
 }
