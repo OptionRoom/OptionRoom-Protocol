@@ -21,7 +21,7 @@ contract NFTStake is IERC1155Receiver {
 
     mapping(uint256 => mapping(address => bool)) nftLockedToStakeRoom;
 
-    mapping(uint256 => uint256) private _totalSupplay;
+    mapping(uint256 => uint256) private _totalStaked;
     mapping(uint256 => mapping(address => uint256)) private _balances;
 
     mapping(uint256 => uint256) _lastUpdateBlock;
@@ -52,15 +52,21 @@ contract NFTStake is IERC1155Receiver {
         _owner = msg.sender;
         _rewardPerBlock[0] = 0;
 
-        // for math precision
-
-        // TODO: calculate finish block
-        _finishBlock = 0;
-        _rewardPerBlock[0] = blockNumber();
-        _rewardPerBlock[1] = blockNumber();
-        _rewardPerBlock[2] = blockNumber();
-        _rewardPerBlock[3] = blockNumber();
-        _rewardPerBlock[4] = blockNumber();
+        uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
+        
+        uint256 totalRewards0 = 24937e18; // total rewards for pool0 (Tier1)
+        uint256 totalRewards1 = 30922e18; // total rewards for pool1 (Tier2)
+        uint256 totalRewards2 = 36907e18; // total rewards for pool2 (Tier3)
+        uint256 totalRewards3 = 44887e18; // total rewards for pool3 (Tier4)
+        uint256 totalRewards4 = 62344e18; // total rewards for pool4 (Tier5)
+        
+        _finishBlock = blockNumber().add(rewardBlockCount);
+       
+        _rewardPerBlock[0] = totalRewards0.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
+        _rewardPerBlock[1] = totalRewards1.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
+        _rewardPerBlock[2] = totalRewards2.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
+        _rewardPerBlock[3] = totalRewards3.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
+        _rewardPerBlock[4] = totalRewards4.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
 
         _lastUpdateBlock[0] = blockNumber();
         _lastUpdateBlock[1] = blockNumber();
@@ -78,7 +84,7 @@ contract NFTStake is IERC1155Receiver {
                 NFTToken.safeTransferFrom(msg.sender, address(this), poolId, 1, "");
             }
 
-            _totalSupplay[poolId] = _totalSupplay[poolId].add(amount);
+            _totalStaked[poolId] = _totalStaked[poolId].add(amount);
             _balances[poolId][msg.sender] = _balances[poolId][msg.sender].add(amount);
 
             roomToken.transferFrom(msg.sender, address(this), amount);
@@ -91,7 +97,7 @@ contract NFTStake is IERC1155Receiver {
         updateReward(poolId, msg.sender);
 
         if (amount > 0) {
-            _totalSupplay[poolId] = _totalSupplay[poolId].sub(amount);
+            _totalStaked[poolId] = _totalStaked[poolId].sub(amount);
             _balances[poolId][msg.sender] = _balances[poolId][msg.sender].sub(amount);
             // Send Room token staked to the original owner.
             roomToken.transfer(msg.sender, amount);
@@ -149,12 +155,12 @@ contract NFTStake is IERC1155Receiver {
         uint256 cnBlock = blockNumber();
 
         // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (_totalSupplay[poolId] > 0) {
+        if (_totalStaked[poolId] > 0) {
 
             uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
             if (lastRewardBlock > _lastUpdateBlock[poolId]) {
                 _accRewardPerToken[poolId] = lastRewardBlock.sub(_lastUpdateBlock[poolId])
-                .mul(_rewardPerBlock[poolId]).div(_totalSupplay[poolId])
+                .mul(_rewardPerBlock[poolId]).div(_totalStaked[poolId])
                 .add(_accRewardPerToken[poolId]);
             }
         }
@@ -183,11 +189,11 @@ contract NFTStake is IERC1155Receiver {
         uint256 accRewardPerToken = _accRewardPerToken[poolId];
 
         // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply(poolId) > 0) {
+        if (_totalStaked[poolId] > 0) {
             uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
             if (lastRewardBlock > _lastUpdateBlock[poolId]) {
                 accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock[poolId])
-                .mul(_rewardPerBlock[poolId]).div(totalSupply(poolId))
+                .mul(_rewardPerBlock[poolId]).div(_totalStaked[poolId])
                 .add(accRewardPerToken);
             }
         }
@@ -198,8 +204,8 @@ contract NFTStake is IERC1155Receiver {
         .add(_rewards[poolId][account]);
     }
 
-    function totalSupply(uint256 poolId) public view returns (uint256){
-        return _totalSupplay[poolId];
+    function totalStaked(uint256 poolId) public view returns (uint256){
+        return _totalStaked[poolId];
     }
 
     function balanceOf(uint256 poolId, address account) public view returns (uint256) {

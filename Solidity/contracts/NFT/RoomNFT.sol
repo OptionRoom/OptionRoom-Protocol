@@ -32,7 +32,7 @@ contract RoomNFT is ERC1155 {
         _capital[TIER3] = 30;
         _capital[TIER4] = 20;
         _capital[TIER5] = 8;
-
+        
         requiredRoomBurned[TIER1] = 500e18;
         requiredRoomBurned[TIER2] = 120e18; // + burn 1 tier1
         requiredRoomBurned[TIER3] = 120e18; // + burn 1 tier2
