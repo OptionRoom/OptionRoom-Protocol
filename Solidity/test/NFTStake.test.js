@@ -17,7 +17,7 @@ describe("OptionNFT", function () {
     })
 
     beforeEach(async function () {
-        this.staking = await this.NFTStake.deploy()
+        this.staking = await this.NFTStake.deploy(this.dev.address)
         await this.staking.deployed()
 
         this.room = await this.roomToken.deploy()
@@ -90,7 +90,7 @@ describe("OptionNFT", function () {
         await time.advanceBlockTo(Number(currentBlock) + Number(10));
 
         let reward = await this.staking.rewards(0, this.bob.address);
-        expect(reward).to.equal(10);
+        expect(reward).to.equal(getBigNumber(10));
     })
 
     it("Should be able to stake multiple accounts ", async function () {
@@ -102,8 +102,8 @@ describe("OptionNFT", function () {
         let bobReward = await this.staking.rewards(0, this.bob.address);
         let carolReward = await this.staking.rewards(0, this.carol.address);
 
-        expect(bobReward).to.equal(6);
-        expect(carolReward).to.equal(5);
+        expect(bobReward).to.equal(getBigNumber(6));
+        expect(carolReward).to.equal(getBigNumber(5));
     })
 
     it("Should allow stake and unstake and give the correct results ", async function () {
@@ -111,7 +111,7 @@ describe("OptionNFT", function () {
         let currentBlock = await this.staking.blockNumber();
         await time.advanceBlockTo(Number(currentBlock) + Number(10));
         let reward = await this.staking.rewards(0, this.bob.address);
-        expect(reward).to.equal(10);
+        expect(reward).to.equal(getBigNumber(10));
 
 
         let bobLPBalanace = await this.room.connect(this.bob).balanceOf(this.bob.address);
@@ -123,7 +123,7 @@ describe("OptionNFT", function () {
         await time.advanceBlockTo(Number(currentBlock) + Number(1));
 
         bobLPBalanace = await this.room.connect(this.bob).balanceOf(this.bob.address);
-        expect(bobLPBalanace).to.equal(getBigNumber(50000));
+        expect(bobLPBalanace).to.equal(getBigNumber(50011));
     })
 
     it("Should allow exiting a pool ", async function () {
@@ -131,7 +131,7 @@ describe("OptionNFT", function () {
         let currentBlock = await this.staking.blockNumber();
         await time.advanceBlockTo(Number(currentBlock) + Number(10));
         let reward = await this.staking.rewards(0, this.bob.address);
-        expect(reward).to.equal(10);
+        expect(reward).to.equal(getBigNumber(10));
 
 
         let bobLPBalanace = await this.room.connect(this.bob).balanceOf(this.bob.address);
@@ -141,7 +141,7 @@ describe("OptionNFT", function () {
         await this.staking.connect(this.bob).exit(0);
 
         bobLPBalanace = await this.room.connect(this.bob).balanceOf(this.bob.address);
-        expect(bobLPBalanace).to.equal(getBigNumber(50000));
+        expect(bobLPBalanace).to.equal(getBigNumber(50011));
 
         // Because we have got 1000 piece at the NFTTokenMock for this account.
         let bobNFTBalance = await this.nft.balanceOf(this.bob.address, 0);
@@ -176,5 +176,33 @@ describe("OptionNFT", function () {
         let reward = await this.staking.rewards(0, this.bob.address);
         reward = (parseFloat(reward.toString()).toPrecision(19))/1e18;
         expect(reward).to.equal(0.024051890432098762);
+    })
+
+
+    it("Should check pool balance after staking", async function () {
+        await this.staking.connect(this.bob).stake(0, getBigNumber(1));
+        let pool0Balance = await this.staking.totalStaked(0);
+        expect(pool0Balance).to.equal(getBigNumber(1));
+
+        await this.staking.connect(this.carol).stake(0, getBigNumber(1));
+        await this.staking.connect(this.alice).stake(0, getBigNumber(10));
+
+        pool0Balance = await this.staking.totalStaked(0);
+        expect(pool0Balance).to.equal(getBigNumber(12));
+    })
+
+    it("Should check pools balance after staking in different pools", async function () {
+        await this.staking.connect(this.bob).stake(0, getBigNumber(1));
+        let pool0Balance = await this.staking.totalStaked(0);
+        expect(pool0Balance).to.equal(getBigNumber(1));
+
+        await this.staking.connect(this.carol).stake(1, getBigNumber(1));
+        await this.staking.connect(this.alice).stake(1, getBigNumber(10));
+
+        pool0Balance = await this.staking.totalStaked(0);
+        expect(pool0Balance).to.equal(getBigNumber(1));
+
+        let pool1Balance = await this.staking.totalStaked(1);
+        expect(pool1Balance).to.equal(getBigNumber(11));
     })
 })

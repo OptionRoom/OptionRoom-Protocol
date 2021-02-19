@@ -22,13 +22,13 @@ contract NFTStakeMock is NFTStake {
     function assignValues() public {
         uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
 
-        _finishBlock = blockNumber().add(rewardBlockCount);
+        _rewardPerBlock[0] = 1e18 * 1e18;
+        _rewardPerBlock[1] = 1e18 * 1e18;
+        _rewardPerBlock[2] = 1e18 * 1e18;
+        _rewardPerBlock[3] = 1e18 * 1e18;
+        _rewardPerBlock[4] = 1e18 * 1e18;
 
-        _rewardPerBlock[0] = 1e18;
-        _rewardPerBlock[1] = 1e18;
-        _rewardPerBlock[2] = 1e18;
-        _rewardPerBlock[3] = 1e18;
-        _rewardPerBlock[4] = 1e18;
+        _finishBlock = blockNumber().add(rewardBlockCount);
 
         _lastUpdateBlock[0] = blockNumber();
         _lastUpdateBlock[1] = blockNumber();
