@@ -17,8 +17,8 @@ contract RoomStakingMock is RoomStaking {
     }
 
 
-    function getWalletBalance(address walletAddress) external view returns (uint256 walletBalanace) {
-        walletBalanace = roomToken.balanceOf(walletAddress);
+    function getWalletBalance() external view returns (uint256 walletBalanace) {
+        walletBalanace = roomToken.balanceOf(roomTokenRewardsReservoirAddress);
     }
 
     function getCurrentTime() public view returns (uint256){

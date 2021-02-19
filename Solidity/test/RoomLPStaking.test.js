@@ -120,13 +120,21 @@ describe("RoomLPStaking", function () {
         let bobLPBalanace = await this.lpToken.connect(this.bob).balanceOf(this.bob.address);
         expect(bobLPBalanace).to.equal(getBigNumber(999));
 
+        reward = await this.staking.rewards(this.bob.address);
+
         // Unstake, true or false does not matter here.
         await this.staking.connect(this.bob).unstake(getBigNumber(1), true);
 
-        let devRoomWalletBalanace = await this.room.balanceOf(this.bob.address);
-        expect(devRoomWalletBalanace).to.equal(getBigNumber(11));
-    })
+        reward = await this.staking.rewards(this.bob.address);
 
+        bobLPBalanace = await this.lpToken.connect(this.bob).balanceOf(this.bob.address);
+        expect(bobLPBalanace).to.equal(getBigNumber(1000));
+
+        let walletAccountBalance = await this.staking.getWalletBalance();
+
+        let bobRoomTokensValue = await this.room.balanceOf(this.bob.address);
+        expect(bobRoomTokensValue).to.equal(getBigNumber(11));
+    })
 
     it("Should check balance of LP token once unstake ", async function () {
         await this.staking.connect(this.bob).stake(getBigNumber(1));

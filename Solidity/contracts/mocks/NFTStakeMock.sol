@@ -7,6 +7,10 @@ import "../NFT/ERC1155.sol";
 
 contract NFTStakeMock is NFTStake {
 
+    constructor(address walletAddress)
+        public NFTStake(walletAddress) {
+    }
+
     function setRoomTokenAddress(address roomTokenAddress) public {
         roomToken = IERC20(address(roomTokenAddress));
     }
