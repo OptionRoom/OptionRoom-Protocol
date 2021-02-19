@@ -379,7 +379,7 @@ contract RoomLPProgram {
 
     
     // TODO: Please do not forget to call the approve for this contract from the wallet.
-    address private roomTokenRewardsReservoirAddress = 0x86181Ff88BDEC75d5f007cEfEE31087C8327dF77;
+    address public roomTokenRewardsReservoirAddress = 0x86181Ff88BDEC75d5f007cEfEE31087C8327dF77;
     address public owner;
     
     // This is ROOM/ETH LP ERC20 address.
