@@ -377,22 +377,22 @@ contract RoomLPProgram {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    // TODO: Please assign the wallet address to this contract.
+    
     // TODO: Please do not forget to call the approve for this contract from the wallet.
-    address private _roomTokenRewardsReservoirAddress;
-    address private _owner;
+    address private roomTokenRewardsReservoirAddress = 0x86181Ff88BDEC75d5f007cEfEE31087C8327dF77;
+    address public owner;
     
     // This is ROOM/ETH LP ERC20 address.
-    IERC20 public roomLPToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
+    IERC20 public constant roomLPToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
 
     // This is the correct CRC address of the ROOM token
-    IERC20 public roomToken = IERC20(0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64);
+    IERC20 public constant roomToken = IERC20(0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64);
 
     // total Room LP staked
     uint256 private _totalStaked;
 
     // last updated block number
-    uint256 private _lastUpdateBlock;
+    uint256 public lastUpdateBlock;
 
     uint256 private  _accRewardPerToken; // accumulative reward per token
     uint256 private  _rewardPerBlock;   // reward per block
@@ -403,18 +403,22 @@ contract RoomLPProgram {
     mapping(address => uint256) private _prevAccRewardPerToken; // previous accumulative reward per token (for a user)
     mapping(address => uint256) private _balances; // balances per user
     
-    event RoomTokenWalletEmpty();
+   
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event ClaimReward(address indexed user, uint256 reward);
-    event StakeRewards(address indexed user, uint256 amount, uint256 lockTime);
-    event CourtStakeChanged(address oldAddress, address newAddress);
-    event StakingParametersChanged(uint256 rewardPerBlock, uint256 rewardBlockCount);
+    event FarmingParametersChanged(uint256 rewardPerBlock, uint256 rewardBlockCount, address indexed roomTokenRewardsReservoirAdd);
+    event RewardTransferFailed(TransferRewardState failure);
+    
+    enum TransferRewardState {
+        Succeeded,
+        RewardWalletEmpty
+    }
+    
+    constructor () public {
 
-    constructor (address roomTokenRewardsReservoirAddress) public {
-
-        _owner = msg.sender;
-        _roomTokenRewardsReservoirAddress = roomTokenRewardsReservoirAddress;
+        owner = msg.sender;
+       
         
         uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
         uint256 totalRewards = 240000e18;  // total rewards 240,000 Room in six months
@@ -422,20 +426,20 @@ contract RoomLPProgram {
         _rewardPerBlock = totalRewards.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precisio
         finishBlock = blockNumber().add(rewardBlockCount);
         endTime = finishBlock.sub(blockNumber()).mul(15).add(block.timestamp);
-        _lastUpdateBlock = blockNumber();
+        lastUpdateBlock = blockNumber();
     }
 
-    function changeFarmingParameters(uint256 rewardPerBlock, uint256 rewardBlockCount, address roomTokenRewardsReservoirAddress) public {
+    function changeFarmingParameters(uint256 rewardPerBlock, uint256 rewardBlockCount, address roomTokenRewardsReservoirAdd) external {
 
-        require(msg.sender == _owner, "can be called by owner only");
+        require(msg.sender == owner, "can be called by owner only");
         updateReward(address(0));
         _rewardPerBlock = rewardPerBlock.mul(1e18); // for math precision
         
         finishBlock = blockNumber().add(rewardBlockCount);
         endTime = finishBlock.sub(blockNumber()).mul(15).add(block.timestamp);
-        _roomTokenRewardsReservoirAddress = roomTokenRewardsReservoirAddress;
+        roomTokenRewardsReservoirAddress = roomTokenRewardsReservoirAdd;
 
-        emit StakingParametersChanged(_rewardPerBlock, rewardBlockCount);
+        emit FarmingParametersChanged(_rewardPerBlock, rewardBlockCount, roomTokenRewardsReservoirAddress);
     }
 
     function updateReward(address account) public {
@@ -446,14 +450,15 @@ contract RoomLPProgram {
         // update accRewardPerToken, in case totalStaked is zero; do not increment accRewardPerToken
         if (totalStaked() > 0) {
             uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
-            if (lastRewardBlock > _lastUpdateBlock) {
-                _accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalStaked())
+            if (lastRewardBlock > lastUpdateBlock) {
+                _accRewardPerToken = lastRewardBlock.sub(lastUpdateBlock)
+                .mul(_rewardPerBlock)
+                .div(totalStaked())
                 .add(_accRewardPerToken);
             }
         }
 
-        _lastUpdateBlock = cnBlock;
+        lastUpdateBlock = cnBlock;
 
         if (account != address(0)) {
 
@@ -471,66 +476,61 @@ contract RoomLPProgram {
         }
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) external {
         updateReward(msg.sender);
 
-        if (amount > 0) {
-            _totalStaked = _totalStaked.add(amount);
-            _balances[msg.sender] = _balances[msg.sender].add(amount);
+        _totalStaked = _totalStaked.add(amount);
+        _balances[msg.sender] = _balances[msg.sender].add(amount);
 
-            // Transfer from owner of Room Token to this address.
-            roomLPToken.safeTransferFrom(msg.sender, address(this), amount);
-            emit Staked(msg.sender, amount);
-        }
+        // Transfer from owner of Room Token to this address.
+        roomLPToken.safeTransferFrom(msg.sender, address(this), amount);
+        emit Staked(msg.sender, amount);
     }
 
-    function unstake(uint256 amount, bool claim) public {
+    function unstake(uint256 amount, bool claim) external returns(uint256 reward, TransferRewardState reason) {
         updateReward(msg.sender);
 
-        if (amount > 0) {
-            _totalStaked = _totalStaked.sub(amount);
-            _balances[msg.sender] = _balances[msg.sender].sub(amount);
-            // Send Room token staked to the original owner.
-            roomLPToken.safeTransfer(msg.sender, amount);
-            emit Unstaked(msg.sender, amount);
-        }
+
+        _totalStaked = _totalStaked.sub(amount);
+        _balances[msg.sender] = _balances[msg.sender].sub(amount);
+        // Send Room token staked to the original owner.
+        roomLPToken.safeTransfer(msg.sender, amount);
+       
 
         if (claim) {
-            uint256 reward = _rewards[msg.sender];
-            uint256 walletBalanace = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
-
-            if (reward > 0 && walletBalanace >= reward) {
-                _rewards[msg.sender] = 0;
-                // Instead of minting we transfer from reward wallet address to the message sender.
-                roomToken.transferFrom(_roomTokenRewardsReservoirAddress, msg.sender, reward);
-                emit ClaimReward(msg.sender, reward);
-            }
+          (reward, reason) = _executeRewardTransfer(msg.sender);
         }
+        
+         emit Unstaked(msg.sender, amount);
     }
-
-    function claimReward() public returns (uint256 reward, uint8 reason) {
+    
+    function claimReward() external returns (uint256 reward, TransferRewardState reason) {
         updateReward(msg.sender);
-        // 0 means successful operation for transferring tokens.
-        reason = 0;
-        reward = _rewards[msg.sender];
 
+        return _executeRewardTransfer(msg.sender);
+    }
+    
+    function _executeRewardTransfer(address account) internal returns(uint256 reward, TransferRewardState reason) {
+        
+        reward = _rewards[account];
         if (reward > 0) {
-            uint256 walletBalanace = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
+            uint256 walletBalanace = roomToken.balanceOf(roomTokenRewardsReservoirAddress);
             if (walletBalanace < reward) {
                 // This fails, and we send reason 1 for the UI
                 // to display a meaningful message for the user.
                 // 1 means the wallet is empty.
-                reason = 1;
-                emit RoomTokenWalletEmpty();
-            } else{
+                reason = TransferRewardState.RewardWalletEmpty;
+                emit RewardTransferFailed(reason);
+                
+            } else {
+                
                 // We will transfer and then empty the rewards
                 // for the sender.
                 _rewards[msg.sender] = 0;
-                roomToken.transferFrom(_roomTokenRewardsReservoirAddress, msg.sender, reward);
+                roomToken.transferFrom(roomTokenRewardsReservoirAddress, msg.sender, reward);
                 emit ClaimReward(msg.sender, reward);
             }
         }
-        return (reward, reason);
     }
 
     function rewards(address account) external view returns (uint256 reward) {
@@ -541,8 +541,8 @@ contract RoomLPProgram {
         // update accRewardPerToken, in case totalStaked is zero; do not increment accRewardPerToken
         if (totalStaked() > 0) {
             uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
-            if (lastRewardBlock > _lastUpdateBlock) {
-                accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
+            if (lastRewardBlock > lastUpdateBlock) {
+                accRewardPerToken = lastRewardBlock.sub(lastUpdateBlock)
                 .mul(_rewardPerBlock).div(totalStaked())
                 .add(accRewardPerToken);
             }
@@ -564,7 +564,7 @@ contract RoomLPProgram {
         rewardFinishBlock = finishBlock;
         rewardPerBlock = _rewardPerBlock.div(1e18);
         rewardEndTime = endTime;
-        walletBalance = roomToken.balanceOf(_roomTokenRewardsReservoirAddress);
+        walletBalance = roomToken.balanceOf(roomTokenRewardsReservoirAddress);
     }
 
     // expected reward,
@@ -578,8 +578,8 @@ contract RoomLPProgram {
         // update accRewardPerToken, in case totalStaked is zero do; not increment accRewardPerToken
 
         uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
-        if (lastRewardBlock > _lastUpdateBlock) {
-            accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
+        if (lastRewardBlock > lastUpdateBlock) {
+            accRewardPerToken = lastRewardBlock.sub(lastUpdateBlock)
             .mul(_rewardPerBlock).div(totalStaked().add(amount))
             .add(accRewardPerToken);
         }
