@@ -154,7 +154,7 @@ describe("OptionNFT", function () {
 
     it("Should check values of the org contract values", async function () {
         await this.staking.connect(this.bob).assignOrgValues();
-        let rewardValue = await this.staking.connect(this.bob).getRewardValueForPool1();
+        let rewardValue = await this.staking.connect(this.bob).getPoolRewardValue(0);
 
         await this.staking.connect(this.bob).stake(0, getBigNumber(1));
         let currentBlock = await this.staking.blockNumber();
@@ -167,7 +167,7 @@ describe("OptionNFT", function () {
 
     it("Should check values of the org contract values", async function () {
         await this.staking.connect(this.bob).assignOrgValues();
-        let rewardValue = await this.staking.connect(this.bob).getRewardValueForPool1();
+        let rewardValue = await this.staking.connect(this.bob).getPoolRewardValue(0);
 
         await this.staking.connect(this.bob).stake(0, getBigNumber(1));
         let currentBlock = await this.staking.blockNumber();
