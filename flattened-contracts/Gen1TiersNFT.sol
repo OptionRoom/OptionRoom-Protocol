@@ -1113,7 +1113,7 @@ contract Gen1TiersNFT is ERC1155 {
     }
     
     function setUri(string memory uri) public {
-        require(owner == _msgSender(),"");
+        require(owner == _msgSender(),"Caller is not owner");
         _setURI(uri);
     }
 
