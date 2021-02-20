@@ -4,11 +4,14 @@ import "../Farming/CourtFarming.sol";
 
 contract CourtFarmingMock is CourtFarming {
 
-    constructor(uint256 rewardPerBlock, uint256 rewardBlockCount,
-        uint256 incvRewardPerBlock, uint256 incvRewardBlockCount,
-        uint256 incvLockTime) public CourtFarming(rewardPerBlock, rewardBlockCount, incvRewardPerBlock,
-        incvRewardBlockCount, incvLockTime) {
+    uint256 constant rewardPerBlock =  1e18;
+    uint256 constant rewardBlockCount = 1000;
+    uint256 constant incvRewardPerBlock = 1e18 * 1e18 * 15;
+    uint256 constant incvRewardBlockCount = 500;
+    uint256 constant incvLockTime = 500;
 
+    constructor() public CourtFarming(rewardPerBlock, rewardBlockCount, incvRewardPerBlock,
+        incvRewardBlockCount, incvLockTime) {
     }
 
     function setLPToken(address courtStakeAdd) public {
