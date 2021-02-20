@@ -1043,6 +1043,8 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 // This is OptionNFT
 contract Gen1TiersNFT is ERC1155 {
 
+    address public owner;
+    
     mapping(uint256 => uint256) private _totalSupply;
     mapping(uint256 => uint256) private _capital;
     mapping(uint256 => uint256) public requiredRoomBurned;
@@ -1059,7 +1061,9 @@ contract Gen1TiersNFT is ERC1155 {
 
     event TierMinted(bool status, uint256 amount);
 
-    constructor() public ERC1155("https://s3.amazonaws.com/www.optionroom.finance/nfts/{id}.json"){
+    constructor() public ERC1155(""){
+        owner = _msgSender();
+        
         _capital[TIER1] = 50;
         _capital[TIER2] = 40;
         _capital[TIER3] = 30;
@@ -1107,6 +1111,11 @@ contract Gen1TiersNFT is ERC1155 {
         emit TierMinted(true, id);
         return true;
     }
+    
+    function setUri(string memory uri) public {
+        require(owner == _msgSender(),"");
+        _setURI(uri);
+    }
 
     function totalSupply(uint256 id) public view returns (uint256) {
         return _totalSupply[id];
@@ -1121,6 +1130,6 @@ contract Gen1TiersNFT is ERC1155 {
     }
     
     function tokenURI(uint256 id) external view returns (string memory){
-        uri(id);
+        return uri(id);
     }
 }

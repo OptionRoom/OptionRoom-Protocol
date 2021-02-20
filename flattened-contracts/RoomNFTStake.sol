@@ -513,7 +513,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
     IERC1155 public constant NFTToken = IERC1155(0x40c45a58aeFF1c55Bd268e1c0b3fdaFD1E33CDf0);
 
     uint256 public finishBlock;
-    address private _roomTokenRewardsReservoirAddress = 0x5419F0b9e40EF0EeC44640800eD21272491D4CEC;
+    address public roomTokenRewardsReservoirAddress = 0x5419F0b9e40EF0EeC44640800eD21272491D4CEC;
 
     mapping(uint256 => mapping(address => bool)) _nftLockedToStakeRoom;
 
@@ -551,8 +551,6 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
     }
 
     constructor (address NFTTokenAdd) public {
-        NFTToken= IERC1155(NFTTokenAdd);
-
         uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
 
         uint256 totalRewards0 = 24937e18; // 24,937 room Token total rewards for pool0 (Tier1)
@@ -563,11 +561,11 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
 
         finishBlock = blockNumber().add(rewardBlockCount);
 
-        _rewardPerBlock[0] = totalRewards0.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
-        _rewardPerBlock[1] = totalRewards1.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
-        _rewardPerBlock[2] = totalRewards2.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
-        _rewardPerBlock[3] = totalRewards3.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
-        _rewardPerBlock[4] = totalRewards4.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precision
+        _rewardPerBlock[0] = totalRewards0 * (1e18) / rewardBlockCount; // mul(1e18) for math precision
+        _rewardPerBlock[1] = totalRewards1 * (1e18) / rewardBlockCount; // mul(1e18) for math precision
+        _rewardPerBlock[2] = totalRewards2 * (1e18) / rewardBlockCount; // mul(1e18) for math precision
+        _rewardPerBlock[3] = totalRewards3 * (1e18) / rewardBlockCount; // mul(1e18) for math precision
+        _rewardPerBlock[4] = totalRewards4 * (1e18) / rewardBlockCount; // mul(1e18) for math precision
 
         lastUpdateBlock[0] = blockNumber();
         lastUpdateBlock[1] = blockNumber();
@@ -638,7 +636,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
                 // We will transfer and then empty the rewards
                 // for the sender.
                 _rewards[poolId][msg.sender] = 0;
-                roomToken.transferFrom(_roomTokenRewardsReservoirAddress, msg.sender, reward);
+                roomToken.transferFrom(roomTokenRewardsReservoirAddress, msg.sender, reward);
                 emit ClaimReward(poolId, msg.sender, reward);
             }
         }
@@ -711,6 +709,5 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
     function blockNumber() public view returns (uint256) {
         return block.number;
     }
-
 
 }
