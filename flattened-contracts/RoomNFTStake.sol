@@ -577,7 +577,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
         lastUpdateBlock[4] = blockNumber();
     }
 
-    function stake(uint256 poolId, uint256 amount) public {
+    function stake(uint256 poolId, uint256 amount) external {
         updateReward(poolId, msg.sender);
 
         if (amount > 0) {
@@ -595,7 +595,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
         }
     }
 
-    function unstake(uint256 poolId, uint256 amount, bool claim) public {
+    function unstake(uint256 poolId, uint256 amount, bool claim) public returns(uint256 reward, TransferRewardState reason)  {
         updateReward(poolId, msg.sender);
 
         _totalStaked[poolId] = _totalStaked[poolId].sub(amount);
@@ -618,7 +618,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
         }
     }
 
-    function claimReward(uint256 poolId) public returns (uint256 reward, uint8 reason) {
+    function claimReward(uint256 poolId) external returns (uint256 reward, TransferRewardState reason) {
         updateReward(poolId, msg.sender);
         return _executeRewardTransfer(poolId, msg.sender);
     }
