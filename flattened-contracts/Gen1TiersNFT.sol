@@ -1064,11 +1064,11 @@ contract Gen1TiersNFT is ERC1155 {
     constructor() public ERC1155(""){
         owner = _msgSender();
         
-        _capital[TIER1] = 50;
-        _capital[TIER2] = 40;
-        _capital[TIER3] = 30;
-        _capital[TIER4] = 20;
-        _capital[TIER5] = 8;
+        _capital[TIER1] = 75;
+        _capital[TIER2] = 60;
+        _capital[TIER3] = 45;
+        _capital[TIER4] = 30;
+        _capital[TIER5] = 12;
         
         requiredRoomBurned[TIER1] = 500e18;
         requiredRoomBurned[TIER2] = 120e18; // + burn 1 tier1
