@@ -513,7 +513,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
     IERC1155 public constant NFTToken = IERC1155(0x40c45a58aeFF1c55Bd268e1c0b3fdaFD1E33CDf0);
 
     uint256 public finishBlock;
-    address private _roomTokenRewardsReservoirAddress;
+    address private _roomTokenRewardsReservoirAddress = 0x5419F0b9e40EF0EeC44640800eD21272491D4CEC;
 
     mapping(uint256 => mapping(address => bool)) _nftLockedToStakeRoom;
 
@@ -550,8 +550,7 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
         return true;
     }
 
-    constructor (address rewardWallet, address NFTTokenAdd) public {
-        _roomTokenRewardsReservoirAddress = rewardWallet;
+    constructor (address NFTTokenAdd) public {
         NFTToken= IERC1155(NFTTokenAdd);
 
         uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
