@@ -419,13 +419,13 @@ contract RoomLPProgram {
 
         owner = msg.sender;
        
-        
         uint256 rewardBlockCount = 1036800;  // 5760 * 30 * 6; six months = 1,036,800 blocks
         uint256 totalRewards = 240000e18;  // total rewards 240,000 Room in six months
        
-        _rewardPerBlock = totalRewards.mul(1e18).div(rewardBlockCount); // mul(1e18) for math precisio
-        finishBlock = blockNumber().add(rewardBlockCount);
-        endTime = finishBlock.sub(blockNumber()).mul(15).add(block.timestamp);
+        _rewardPerBlock = totalRewards * (1e18) / rewardBlockCount; // *(1e18) for math precisio
+        
+        finishBlock = blockNumber() + rewardBlockCount;
+        endTime = ((finishBlock-blockNumber()) * 15) + (block.timestamp);
         lastUpdateBlock = blockNumber();
     }
 
