@@ -205,4 +205,26 @@ describe("OptionNFT", function () {
         let pool1Balance = await this.staking.totalStaked(1);
         expect(pool1Balance).to.equal(getBigNumber(11));
     })
+
+    it("Should allow user to stake on multiple pools", async function () {
+        await this.staking.connect(this.bob).stake(0, getBigNumber(1));
+        await this.staking.connect(this.bob).stake(1, getBigNumber(1));
+        await this.staking.connect(this.bob).stake(2, getBigNumber(1));
+        await this.staking.connect(this.bob).stake(3, getBigNumber(1));
+
+        let pool0Balance = await this.staking.totalStaked(0);
+        expect(pool0Balance).to.equal(getBigNumber(1));
+
+        pool0Balance = await this.staking.totalStaked(0);
+        expect(pool0Balance).to.equal(getBigNumber(1));
+
+        let pool1Balance = await this.staking.totalStaked(1);
+        expect(pool1Balance).to.equal(getBigNumber(1));
+
+        let pool2Balance = await this.staking.totalStaked(2);
+        expect(pool2Balance).to.equal(getBigNumber(1));
+
+        let pool3Balance = await this.staking.totalStaked(3);
+        expect(pool3Balance).to.equal(getBigNumber(1));
+    })
 })
