@@ -709,5 +709,9 @@ contract RoomNFTStake is IERC1155Receiver, ReentrancyGuard {
     function blockNumber() public view returns (uint256) {
         return block.number;
     }
+    
+    function getNftLockedToStakeRoom(uint256 id, address account) external view returns(bool){
+        return _nftLockedToStakeRoom[id][account];
+    }
 
 }
