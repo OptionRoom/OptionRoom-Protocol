@@ -6,9 +6,11 @@ contract CourtFarmingMock is CourtFarming {
 
     uint256 constant rewardPerBlock =  1e18;
     uint256 constant rewardBlockCount = 1000;
-    uint256 constant incvRewardPerBlock = 1e18 * 1e18 * 15;
+    uint256 constant incvRewardPerBlock = 1e18;
     uint256 constant incvRewardBlockCount = 500;
-    uint256 constant incvLockTime = 500;
+
+    //Tuesday, 23 March 2021 18:12:10
+    uint256 constant incvLockTime = 1616523130;
 
     constructor() public CourtFarming(rewardPerBlock, rewardBlockCount, incvRewardPerBlock,
         incvRewardBlockCount, incvLockTime) {
@@ -24,5 +26,13 @@ contract CourtFarmingMock is CourtFarming {
 
     function getCurrentTime() public view returns (uint256){
         return block.timestamp;
+    }
+
+    function lockRewards() public {
+        incvLocked = true;
+    }
+
+    function unlockRewards() public {
+        incvLocked = false;
     }
 }

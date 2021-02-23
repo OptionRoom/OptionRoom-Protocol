@@ -3,17 +3,8 @@ const { expect } = require("chai")
 const { time , getBigNumber} = require("./utilities")
 const web3 = require('web3');
 
-describe("Stacking", function () {
-
-    // 1e18,1000,15e17,500,500
-    // const rewardPerBlockInt = 1;
-    // const rewardPerBlock = getBigNumber(rewardPerBlockInt);
-    // const rewardBlockCount = 1000;
-    // const incvRewardPerBlock = getBigNumber(15);
-    // const incvRewardBlockCount = 500;
-    // const incvLockTime = 500;
-
-    // let bobLatestReward;
+// Testing for staking the room to get court.
+describe("Court/Rewards farming test", function () {
 
     before(async function () {
         this.signers = await ethers.getSigners()
@@ -26,32 +17,6 @@ describe("Stacking", function () {
         this.CourtFarming = await ethers.getContractFactory("CourtFarmingMock");
         this.dummyLPToken = await ethers.getContractFactory("LPTokenMock");
         this.dummaryCourtToken = await ethers.getContractFactory("ERC20DetailedMock");
-
-        // this.courtFarming = await this.CourtFarming.deploy();
-        // this.dummyLPToken = await this.dummyLPToken.deploy();
-        // this.dummaryCourtToken = await this.dummaryCourtToken.deploy( );
-
-        // await this.courtFarming.deployed();
-        // await this.dummyLPToken.deployed();
-        // await this.dummaryCourtToken.deployed();
-
-        // await this.courtFarming.setLPToken(this.dummyLPToken.address);
-        // await this.courtFarming.setStakingToken(this.dummaryCourtToken.address);
-        //
-        // this.dummyLPToken = await this.dummyLPToken.deployed();
-        //
-        // await this.dummyLPToken.transfer(this.alice.address, "1000")
-        //
-        // await this.dummyLPToken.transfer(this.bob.address, "230")
-        //
-        // await this.dummyLPToken.transfer(this.carol.address, "1000")
-        //
-        // await this.dummyLPToken.connect(this.bob).approve(this.courtFarming.address,
-        //     "230", { from: this.bob.address });
-        //
-        // await this.dummyLPToken.connect(this.alice).approve(this.courtFarming.address,
-        //     "1000", { from: this.alice.address });
-
     })
 
     beforeEach(async function () {
@@ -77,20 +42,26 @@ describe("Stacking", function () {
 
         await this.lpToken.connect(this.alice).approve(this.farming.address,
             "1000", { from: this.alice.address });
-
-
-        // // The contract of farming deployed.
-        // this.cfd = await this.courtFarming.deployed();
-        // // The court token deployed
-        // this.dct = await this.dummaryCourtToken.deployed();
-        //
-        // // The lp token deployed
-        // this.dlpt = await this.dummyLPToken.deployed();
     })
 
     it("should set correct state variables", async function () {
         const totalSupply = await this.farming.totalSupply();
+        expect(totalSupply).to.equal(getBigNumber(0))
         const blocksInformation = await this.farming.info();
+    })
+
+    it("Should revert if you try to stack more tokens than you have ", async function () {
+        await expect(this.farming.connect(this.bob).stake("1001")).to.be.revertedWith("low-level call failed")
+    })
+
+    it("Should revert if you try to unstack tokens you do not have ", async function () {
+        await expect(this.farming.connect(this.bob).unstake("1", false)).to.be.revertedWith("subtraction overflow")
+    })
+
+    it("Should be reverted if I try to stake more tokens that approved ", async function () {
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0));
+        await expect(this.farming.connect(this.bob).stake("231")).to.be.revertedWith("low-level call failed")
     })
 
     it("Should check the reward after staking ", async function () {
@@ -100,7 +71,6 @@ describe("Stacking", function () {
         let bobReward = await this.farming.rewards(this.bob.address);
         expect(bobReward.reward).to.equal(getBigNumber(1))
     })
-
 
     it("Should check the reward after staking of multiple accounts ", async function () {
         let bsb = await this.farming.blockNumber();
@@ -173,20 +143,13 @@ describe("Stacking", function () {
         expect(bobCourtBalance).to.equal(getBigNumber(2));
 
 
-        // currentBlock = await this.farming.blockNumber();
-        //
-        // await time.advanceBlockTo(Number(currentBlock) + Number(10));
-        //
-        // await this.farming.connect(this.bob).unstake("0", true);
-        // bobDctBalane = await this.court.balanceOf(this.bob.address);
-        // parsed = (parseFloat(bobDctBalane.toString()).toPrecision(19))/1e18;
-        //
-        // expect(parsed).to.equal(Number(bobLatestReward) + Number(bobRatio));
-        //
-        // bobLatestReward = await this.farming.rewards(this.bob.address);
-        //
-        // bobLatestReward = (parseFloat(bobLatestReward.reward.toString()).toPrecision(19))/1e18;
-        // expect(bobRewardValue - prevBobRewardValue).to.equal(1.5)
+        currentBlock = await this.farming.blockNumber();
+
+        await time.advanceBlockTo(Number(currentBlock) + Number(10));
+
+        await this.farming.connect(this.bob).unstake("0", true);
+        bobDctBalane = await this.court.balanceOf(this.bob.address);
+        expect(bobDctBalane).to.equal(getBigNumber(2));
     })
 
 
@@ -198,7 +161,6 @@ describe("Stacking", function () {
         currentBlock = await this.farming.blockNumber();
         await time.advanceBlockTo(Number(currentBlock) + Number(1));
         let reward1 = await this.farming.rewards(this.bob.address);
-        bobLatestReward = (parseFloat(reward1.reward.toString()).toPrecision(19))/1e18;
         // expect(reward1.reward).to.equal(getBigNumber(1))
     })
 
