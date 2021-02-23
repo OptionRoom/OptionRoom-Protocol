@@ -19,7 +19,7 @@ contract CourtFarming {
     //TODO: set the correct Court Token address
     IMERC20 public courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
 
-    uint256 private _totalSupply;
+    uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
 
     // last updated block number
@@ -95,18 +95,18 @@ contract CourtFarming {
         uint256 cnBlock = blockNumber();
 
         // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply() > 0) {
+        if (_totalStaked > 0) {
             uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 _accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalSupply())
+                .mul(_rewardPerBlock).div(_totalStaked)
                 .add(_accRewardPerToken);
             }
 
             uint256 incvlastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock : _incvFinishBlock;
             if (incvlastRewardBlock > _lastUpdateBlock) {
                 _incvAccRewardPerToken = incvlastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_incvRewardPerBlock).div(totalSupply())
+                .mul(_incvRewardPerBlock).div(_totalStaked)
                 .add(_incvAccRewardPerToken);
             }
         }
@@ -145,7 +145,7 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         if (amount > 0) {
-            _totalSupply = _totalSupply.add(amount);
+            _totalStaked = _totalStaked.add(amount);
             _balances[msg.sender] = _balances[msg.sender].add(amount);
             lpToken.safeTransferFrom(msg.sender, address(this), amount);
             emit Staked(msg.sender, amount);
@@ -156,7 +156,7 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         if (amount > 0) {
-            _totalSupply = _totalSupply.sub(amount);
+            _totalStaked = _totalStaked.sub(amount);
             _balances[msg.sender] = _balances[msg.sender].sub(amount);
             lpToken.safeTransfer(msg.sender, amount);
             emit Unstaked(msg.sender, amount);
@@ -176,7 +176,7 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         uint256 reward = _rewards[msg.sender];
-        // TODO: chose if or require
+        // TODO: choose if or require
         if (reward > 0) {
             _rewards[msg.sender] = 0;
             courtToken.mint(msg.sender, reward);
@@ -186,7 +186,7 @@ contract CourtFarming {
     }
 
     function claimIncvReward() public returns (uint256){
-        // TODO: chose if or require
+        // TODO: choose if or require
         if (incvLocked && block.timestamp < _incvLockTime) {
             return 0;
         }
@@ -194,7 +194,7 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         uint256 incvReward = _incvRewards[msg.sender];
-        // TODO: chose if or require
+        // TODO: choose if or require
         if (incvReward > 0) {
             _incvRewards[msg.sender] = 0;
             courtToken.mint(msg.sender, incvReward);
@@ -209,7 +209,7 @@ contract CourtFarming {
         updateReward(msg.sender);
         uint256 reward = _rewards[msg.sender];
 
-        // TODO: chose if or require
+        // TODO: choose if or require
         if (amount > reward || courtStakeAddress == address(0)) {
             return false;
         }
@@ -228,7 +228,7 @@ contract CourtFarming {
         updateReward(msg.sender);
         uint256 incvReward = _incvRewards[msg.sender];
 
-        // TODO: chose if or require
+        // TODO: choose if or require
         if (amount > incvReward || courtStakeAddress == address(0)) {
             return false;
         }
@@ -261,18 +261,18 @@ contract CourtFarming {
         uint256 incvAccRewardPerToken = _incvAccRewardPerToken;
 
         // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply() > 0) {
+        if (_totalStaked > 0) {
             uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalSupply())
+                .mul(_rewardPerBlock).div(_totalStaked)
                 .add(accRewardPerToken);
             }
 
             uint256 incvLastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock : _incvFinishBlock;
             if (incvLastRewardBlock > _lastUpdateBlock) {
                 incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_incvRewardPerBlock).div(totalSupply())
+                .mul(_incvRewardPerBlock).div(_totalStaked)
                 .add(incvAccRewardPerToken);
             }
         }
@@ -313,14 +313,14 @@ contract CourtFarming {
         uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
         if (lastRewardBlock > _lastUpdateBlock) {
             accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_rewardPerBlock).div(totalSupply().add(amount))
+            .mul(_rewardPerBlock).div(_totalStaked.add(amount))
             .add(accRewardPerToken);
         }
 
         uint256 incvLastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock : _incvFinishBlock;
         if (incvLastRewardBlock > _lastUpdateBlock) {
             incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_incvRewardPerBlock).div(totalSupply().add(amount))
+            .mul(_incvRewardPerBlock).div(_totalStaked.add(amount))
             .add(incvAccRewardPerToken);
         }
 
@@ -342,8 +342,8 @@ contract CourtFarming {
         return _balances[account];
     }
 
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
+    function totalStaked() public view returns (uint256) {
+        return _totalStaked;
     }
 
     function blockNumber() public view returns (uint256) {
