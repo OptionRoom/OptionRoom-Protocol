@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.6.0;
 
 import "./ERC1155.sol";
 import "./IERC20.sol";
+import "./ReentrancyGuard.sol";
 
 
-contract NFTStake is IERC1155Receiver {
+contract NFTStake is IERC1155Receiver,ReentrancyGuard {
 
     using SafeMath for uint256;
 
@@ -119,7 +119,7 @@ contract NFTStake is IERC1155Receiver {
         }
     }
 
-    function exit(uint256 poolId) public {
+    function exit(uint256 poolId) public nonReentrant{
         unstake(poolId, _balances[poolId][msg.sender], true);
         if (nftLockedToStakeRoom[poolId][msg.sender]) {
             nftLockedToStakeRoom[poolId][msg.sender] = false;
