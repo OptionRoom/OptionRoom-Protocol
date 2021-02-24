@@ -42,6 +42,9 @@ describe("Court/Rewards farming test", function () {
 
         await this.lpToken.connect(this.alice).approve(this.farming.address,
             "1000", { from: this.alice.address });
+
+        await this.lpToken.connect(this.carol).approve(this.farming.address,
+            "1000", { from: this.carol.address });
     })
 
     it("should set correct state variables", async function () {
@@ -55,6 +58,20 @@ describe("Court/Rewards farming test", function () {
     })
 
     it("Should revert if you try to unstack tokens you do not have ", async function () {
+        await expect(this.farming.connect(this.bob).unstake("1", false)).to.be.revertedWith("subtraction overflow")
+    })
+
+    it("Should pass if you do claim without having anything ", async function () {
+        await this.farming.connect(this.bob).claimReward();
+    })
+
+    it("Should revert on incorrect unstake ", async function () {
+        await this.farming.connect(this.bob).stake("2");
+        await this.farming.connect(this.alice).stake("2");
+        await this.farming.connect(this.carol).stake("2");
+
+        await this.farming.connect(this.bob).unstake("1", false);
+        await this.farming.connect(this.bob).unstake("1", false);
         await expect(this.farming.connect(this.bob).unstake("1", false)).to.be.revertedWith("subtraction overflow")
     })
 
@@ -160,8 +177,6 @@ describe("Court/Rewards farming test", function () {
         await this.farming.connect(this.bob).stake("1");
         currentBlock = await this.farming.blockNumber();
         await time.advanceBlockTo(Number(currentBlock) + Number(1));
-        let reward1 = await this.farming.rewards(this.bob.address);
-        // expect(reward1.reward).to.equal(getBigNumber(1))
     })
 
     it("should allow stake and unstake", async function () {
@@ -179,6 +194,5 @@ describe("Court/Rewards farming test", function () {
         await this.farming.connect(this.bob).unstake(100, true);
 
         expect(await this.lpToken.balanceOf(this.bob.address)).to.equal((putValue + Number(prevBalance)) )
-
     })
 })
