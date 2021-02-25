@@ -14,10 +14,10 @@ contract CourtFarming {
     using SafeERC20 for IERC20;
 
     // TODO: set the correct lpToken address
-    IERC20 public constant stakedToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71faa);
+    IERC20 public stakedToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71faa);
 
     //TODO: set the correct Court Token address
-    IMERC20 public constant courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
+    IMERC20 public courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
 
     uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
@@ -31,7 +31,7 @@ contract CourtFarming {
     uint256 private _accRewardPerToken; // accumulative reward per token
     mapping(address => uint256) private _rewards; // rewards balances
     mapping(address => uint256) private _prevAccRewardPerToken; // previous accumulative reward per token (for a user)
-    
+
 
 
     // incentive rewards
@@ -41,11 +41,11 @@ contract CourtFarming {
     uint256 private _incvAccRewardPerToken; // accumulative reward per token
     mapping(address => uint256) private _incvRewards; // reward balances
     mapping(address => uint256) private _incvPrevAccRewardPerToken;// previous accumulative reward per token (for a user)
-    
+
 
 
     address public owner;
-    
+
     enum TransferRewardState {
         Succeeded,
         RewardsStillLocked
@@ -65,45 +65,39 @@ contract CourtFarming {
     event CourtStakeChanged(address oldAddress, address newAddress);
     event StakeParametersChanged(uint256 rewardPerBlock, uint256 rewardFinishBlock, uint256 incvRewardPerBlock, uint256 incvRewardFinsishBlock, uint256 incvLockTime);
 
-    constructor () public {
+    constructor (uint256 totalRewards,uint256 rewardsPeriodInDays ,
+        uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays) public {
 
         owner = msg.sender;
-        
-        // TODO: fill this info 
-        uint256 totalRewards;
-        uint256 rewardsPeriodInDays;
-        uint256 incvTotalRewards;
-        uint256 incvRewardsPeriodInDays;
         incvLockTime =0;
-        
          _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, incvLockTime);
-        
+
         _lastUpdateBlock = blockNumber();
     }
-    
+
     function _stakeParametrsCalculation(uint256 totalRewards, uint256 rewardsPeriodInDays, uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) internal{
-        
-        
+
+
         uint256 rewardBlockCount = rewardsPeriodInDays * 5760;
         uint256 rewardPerBlock = ((totalRewards * 1e18 )/ rewardBlockCount) / 1e18;
-        
+
         uint256 incvRewardBlockCount = incvRewardsPeriodInDays * 5760;
         uint256 incvRewardPerBlock = ((incvTotalRewards * 1e18 )/ incvRewardBlockCount) / 1e18;
-        
+
         _rewardPerBlock = rewardPerBlock.mul(1e18); // for math precision
         finishBlock = blockNumber().add(rewardBlockCount);
-        
+
         _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
         incvFinishBlock = blockNumber().add(incvRewardBlockCount);
 
         incvLockTime = iLockTime;
     }
 
-    function changeStakeParameters(uint256 totalRewards, uint256 rewardsPeriodInDays, uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) external {
+    function changeStakeParameters(uint256 totalRewards, uint256 rewardsPeriodInDays, uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
 
         require(msg.sender == owner, "can be called by owner only");
         updateReward(address(0));
-        
+
         _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, iLockTime);
 
         emit StakeParametersChanged(_rewardPerBlock, finishBlock, _incvRewardPerBlock, incvFinishBlock, incvLockTime);
@@ -196,7 +190,7 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         uint256 reward = _rewards[msg.sender];
-       
+
         if (reward > 0) {
             _rewards[msg.sender] = 0;
             courtToken.mint(msg.sender, reward);
@@ -206,7 +200,7 @@ contract CourtFarming {
     }
 
     function claimIncvReward() public returns (TransferRewardState ){
-        
+
         if (block.timestamp < incvLockTime) {
             return TransferRewardState.RewardsStillLocked;
         }
@@ -235,7 +229,7 @@ contract CourtFarming {
         }
 
         _rewards[msg.sender] -= amount; // no need to use safe math sub, since there is check for amount > reward
-        
+
         courtToken.mint(address(this), amount);
 
         ICourtStake courtStake = ICourtStake(courtStakeAddress);
@@ -254,7 +248,7 @@ contract CourtFarming {
         }
 
         _incvRewards[msg.sender] -= amount;  // no need to use safe math sub, since there is check for amount > reward
-        
+
         courtToken.mint(address(this), amount);
 
         ICourtStake courtStake = ICourtStake(courtStakeAddress);
@@ -264,7 +258,7 @@ contract CourtFarming {
 
     function setCourtStake(address courtStakeAdd) public {
         require(msg.sender == owner, "only contract owner can change");
-        
+
         address oldAddress = courtStakeAddress;
         courtStakeAddress = courtStakeAdd;
 
@@ -320,7 +314,7 @@ contract CourtFarming {
         }
         rewardLockTime=0;
     }
-    
+
     function incvRewardInfo() external view returns (uint256 cBlockNumber, uint256 incvRewardPerBlock, uint256 incvRewardFinishBlock, uint256 incvRewardFinishTime, uint256 incvRewardLockTime) {
         cBlockNumber = blockNumber();
         incvRewardFinishBlock = incvFinishBlock;
@@ -374,7 +368,7 @@ contract CourtFarming {
         reward = rewardsPerBlock.mul(5760);
         incvReward = incvRewardsPerBlock.mul(5760);
     }
-    
+
     function lastUpdateBlock() external view returns(uint256) {
         return _lastUpdateBlock;
     }
@@ -393,7 +387,7 @@ contract CourtFarming {
         }
         return block.number +lockShift;
     }
-    
+
     ///// for demo
     bool public timeFrezed;
     uint256 frezedBlock =0;

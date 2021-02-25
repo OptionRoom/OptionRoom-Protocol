@@ -45,9 +45,9 @@ describe("Stacking incentive rewards", function () {
     })
 
     it("should set correct state variables", async function () {
-        const totalSupply = await this.farming.totalSupply();
-        expect(totalSupply).to.equal(getBigNumber(0))
-        const blocksInformation = await this.farming.info();
+        const totalStaked = await this.farming.totalStaked();
+        expect(totalStaked).to.equal(getBigNumber(0))
+        const rewardsInformation = await this.farming.rewardInfo();
     })
 
     it("Should revert if you try to stack more tokens than you have ", async function () {
@@ -99,7 +99,7 @@ describe("Stacking incentive rewards", function () {
     it("Should be able to claim incentive rewards after time is valid ", async function () {
         // We will set the time of the contract of a time that we can manage to collect
         // the rewards and see weather we get them or not.
-        await setTime(1616523440);
+        await setTime(1640995200);
         let currentBlock = await this.farming.blockNumber();
 
         let bobRewards = await this.farming.rewards(this.bob.address);

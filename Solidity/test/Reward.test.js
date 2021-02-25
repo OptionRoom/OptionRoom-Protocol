@@ -45,9 +45,9 @@ describe("Court/Rewards farming test", function () {
     })
 
     it("should set correct state variables", async function () {
-        const totalSupply = await this.farming.totalSupply();
-        expect(totalSupply).to.equal(getBigNumber(0))
-        const blocksInformation = await this.farming.info();
+        const totalStaked = await this.farming.totalStaked();
+        expect(totalStaked).to.equal(getBigNumber(0))
+        const blocksInformation = await this.farming.rewardInfo();
     })
 
     it("Should revert if you try to stack more tokens than you have ", async function () {
@@ -80,12 +80,12 @@ describe("Court/Rewards farming test", function () {
         await this.farming.connect(this.alice).stake("2");
         let asb = await this.farming.blockNumber();
 
-        let totalSupply = await this.farming.totalSupply();
+        let totalStaked = await this.farming.totalStaked();
         let balanaceOfBob = await this.farming.balanceOf(this.bob.address);
         let balanaeOfAlice = await this.farming.balanceOf(this.alice.address);
 
-        let bobRatio = (balanaceOfBob/totalSupply).toPrecision(19);
-        let aliceRatio = (balanaeOfAlice/totalSupply).toPrecision(19);
+        let bobRatio = (balanaceOfBob/totalStaked).toPrecision(19);
+        let aliceRatio = (balanaeOfAlice/totalStaked).toPrecision(19);
 
         currentBlock = await this.farming.blockNumber();
         await time.advanceBlockTo(Number(currentBlock) + Number(10));
@@ -121,9 +121,9 @@ describe("Court/Rewards farming test", function () {
     it("Should change farming attributes and calculate farming correctly ", async function () {
         await this.farming.connect(this.bob).stake("2");
 
-        let totalSupply = await this.farming.totalSupply();
+        let totalStaked = await this.farming.totalStaked();
         let balanaceOfBob = await this.farming.balanceOf(this.bob.address);
-        let bobRatio = (balanaceOfBob/totalSupply).toPrecision(19);
+        let bobRatio = (balanaceOfBob/totalStaked).toPrecision(19);
 
         let currentBlock = await this.farming.blockNumber();
         let bobFarmingBalance = await this.farming.balanceOf(this.bob.address);
@@ -179,6 +179,26 @@ describe("Court/Rewards farming test", function () {
         await this.farming.connect(this.bob).unstake(100, true);
 
         expect(await this.lpToken.balanceOf(this.bob.address)).to.equal((putValue + Number(prevBalance)) )
+
+    })
+
+    it("Should revert because none owner is calling.", async function () {
+        await expect(this.farming.connect(this.bob).changeToContractAttributes()).to.be.revertedWith("can be called by owner only")
+    })
+
+    it("Should revert because none owner is calling.", async function () {
+        await this.farming.connect(this.alice).changeToContractAttributes();
+    })
+
+    it("Should return correct values staked after changing attributes.", async function () {
+        await this.farming.connect(this.alice).changeToContractAttributes();
+
+        await this.farming.connect(this.bob).stake("1");
+        let cb = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(cb) + Number(5760/100));
+        let bobReward = await this.farming.rewards(this.bob.address);
+        expect(Number(bobReward.reward/1e18)).to.be.
+            closeTo(getBigNumber(1)/1e18, 0.01);
 
     })
 })
