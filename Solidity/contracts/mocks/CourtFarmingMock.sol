@@ -4,20 +4,31 @@ import "../Farming/CourtFarming.sol";
 
 contract CourtFarmingMock is CourtFarming {
 
-    uint256 constant rewardPerBlock =  1e18;
-    uint256 constant rewardBlockCount = 1000;
-    uint256 constant incvRewardPerBlock = 1e18;
-    uint256 constant incvRewardBlockCount = 500;
 
-    //Tuesday, 23 March 2021 18:12:10
-    uint256 constant incvLockTime = 1616523130;
+//    // TODO: fill this info Those are the on the contract deployed.
+//    uint256 totalRewards  = 45000e18;
+//    uint256 rewardsPeriodInDays = 450;
+//    uint256 incvTotalRewards = 18000e18;
+//    uint256 incvRewardsPeriodInDays = 60;
+//incvLockTime = 1640995200; // 01/01/2022
 
-    constructor() public CourtFarming(rewardPerBlock, rewardBlockCount, incvRewardPerBlock,
-        incvRewardBlockCount, incvLockTime) {
+    uint256 totalRewards = (5760 * 450) * 1e18;
+    uint256 rewardsPeriodInDays = 1 * 450;
+    uint256 incvTotalRewards = (5760 * 450) * 1e18;
+    uint256  incvRewardsPeriodInDays = 1 * 450;
+    uint256 incvLockTimeAssigned = 1640995200; // 01/01/2022
+
+    constructor() public CourtFarming(totalRewards, rewardsPeriodInDays,
+        incvTotalRewards, incvRewardsPeriodInDays) {
+        incvLockTime = incvLockTimeAssigned;
     }
 
-    function setLPToken(address courtStakeAdd) public {
-        lpToken = IERC20(address(courtStakeAdd));
+    function changeToContractAttributes() public {
+        changeStakeParameters(45000e18, 450, 18000e18, 60, 1640995200);
+    }
+
+    function setLPToken(address stakingAddress) public {
+        stakedToken = IERC20(address(stakingAddress));
     }
 
     function setStakingToken(address courtStakeAdd) public {
@@ -26,13 +37,5 @@ contract CourtFarmingMock is CourtFarming {
 
     function getCurrentTime() public view returns (uint256){
         return block.timestamp;
-    }
-
-    function lockRewards() public {
-        incvLocked = true;
-    }
-
-    function unlockRewards() public {
-        incvLocked = false;
     }
 }

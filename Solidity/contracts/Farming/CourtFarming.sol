@@ -14,35 +14,42 @@ contract CourtFarming {
     using SafeERC20 for IERC20;
 
     // TODO: set the correct lpToken address
-    IERC20 public lpToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71faa);
+    IERC20 public stakedToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71faa);
 
     //TODO: set the correct Court Token address
     IMERC20 public courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
 
-    uint256 private _totalSupply;
+    uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
 
     // last updated block number
     uint256 private _lastUpdateBlock;
 
     // normal rewards
+    uint256 public finishBlock; // finish rewarding block number
     uint256 private  _rewardPerBlock;   // reward per block
     uint256 private _accRewardPerToken; // accumulative reward per token
     mapping(address => uint256) private _rewards; // rewards balances
     mapping(address => uint256) private _prevAccRewardPerToken; // previous accumulative reward per token (for a user)
-    uint256 public _finishBlock; // finish rewarding block number
+
 
 
     // incentive rewards
+    uint256 public incvLockTime;
+    uint256 public incvFinishBlock; //  finish incentive rewarding block number
     uint256 private _incvRewardPerBlock; // incentive reward per block
     uint256 private _incvAccRewardPerToken; // accumulative reward per token
     mapping(address => uint256) private _incvRewards; // reward balances
     mapping(address => uint256) private _incvPrevAccRewardPerToken;// previous accumulative reward per token (for a user)
-    uint256 public _incvFinishBlock; //  finish incentive rewarding block number
-    uint256 _incvLockTime;
-    bool incvLocked = true;
 
-    address private _owner;
+
+
+    address public owner;
+
+    enum TransferRewardState {
+        Succeeded,
+        RewardsStillLocked
+    }
 
     // To minimize the actions required to stake COURT, you just put the address
     // of the contract that holds the governance COURT staking.
@@ -56,37 +63,44 @@ contract CourtFarming {
     event ClaimIncentiveReward(address indexed user, uint256 reward);
     event StakeRewards(address indexed user, uint256 amount, uint256 lockTime);
     event CourtStakeChanged(address oldAddress, address newAddress);
-    event FarmingParametersChanged(uint256 rewardPerBlock, uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime);
+    event StakeParametersChanged(uint256 rewardPerBlock, uint256 rewardFinishBlock, uint256 incvRewardPerBlock, uint256 incvRewardFinsishBlock, uint256 incvLockTime);
 
-    constructor (uint256 rewardPerBlock, uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime) public {
+    constructor (uint256 totalRewards,uint256 rewardsPeriodInDays ,
+        uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays) public {
 
-        _owner = msg.sender;
+        owner = msg.sender;
+        incvLockTime =0;
+         _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, incvLockTime);
 
-        _rewardPerBlock = rewardPerBlock.mul(1e18);
-        // for math precision
-        _finishBlock = blockNumber().add(rewardBlockCount);
-
-        _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
-        _incvFinishBlock = blockNumber().add(incvRewardBlockCount);
-
-        _incvLockTime = incvLockTime;
         _lastUpdateBlock = blockNumber();
     }
 
-    function changeFarmingParameters(uint256 rewardPerBlock, uint256 rewardBlockCount, uint256 incvRewardPerBlock, uint256 incvRewardBlockCount, uint256 incvLockTime) public {
+    function _stakeParametrsCalculation(uint256 totalRewards, uint256 rewardsPeriodInDays, uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) internal{
 
-        require(msg.sender == _owner, "can be called by owner only");
-        updateReward(address(0));
-        _rewardPerBlock = rewardPerBlock.mul(1e18);
-        // for math precision
-        _finishBlock = blockNumber().add(rewardBlockCount);
+
+        uint256 rewardBlockCount = rewardsPeriodInDays * 5760;
+        uint256 rewardPerBlock = ((totalRewards * 1e18 )/ rewardBlockCount) / 1e18;
+
+        uint256 incvRewardBlockCount = incvRewardsPeriodInDays * 5760;
+        uint256 incvRewardPerBlock = ((incvTotalRewards * 1e18 )/ incvRewardBlockCount) / 1e18;
+
+        _rewardPerBlock = rewardPerBlock.mul(1e18); // for math precision
+        finishBlock = blockNumber().add(rewardBlockCount);
 
         _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
-        _incvFinishBlock = blockNumber().add(incvRewardBlockCount);
+        incvFinishBlock = blockNumber().add(incvRewardBlockCount);
 
-        _incvLockTime = incvLockTime;
+        incvLockTime = iLockTime;
+    }
 
-        emit FarmingParametersChanged(_rewardPerBlock, rewardBlockCount, _incvRewardPerBlock, incvRewardBlockCount, incvLockTime);
+    function changeStakeParameters(uint256 totalRewards, uint256 rewardsPeriodInDays, uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
+
+        require(msg.sender == owner, "can be called by owner only");
+        updateReward(address(0));
+
+        _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, iLockTime);
+
+        emit StakeParametersChanged(_rewardPerBlock, finishBlock, _incvRewardPerBlock, incvFinishBlock, incvLockTime);
     }
 
     function updateReward(address account) public {
@@ -95,18 +109,18 @@ contract CourtFarming {
         uint256 cnBlock = blockNumber();
 
         // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply() > 0) {
-            uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
+        if (_totalStaked > 0) {
+            uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 _accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalSupply())
+                .mul(_rewardPerBlock).div(_totalStaked)
                 .add(_accRewardPerToken);
             }
 
-            uint256 incvlastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock : _incvFinishBlock;
+            uint256 incvlastRewardBlock = cnBlock < incvFinishBlock ? cnBlock : incvFinishBlock;
             if (incvlastRewardBlock > _lastUpdateBlock) {
                 _incvAccRewardPerToken = incvlastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_incvRewardPerBlock).div(totalSupply())
+                .mul(_incvRewardPerBlock).div(_totalStaked)
                 .add(_incvAccRewardPerToken);
             }
         }
@@ -145,9 +159,9 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         if (amount > 0) {
-            _totalSupply = _totalSupply.add(amount);
+            _totalStaked = _totalStaked.add(amount);
             _balances[msg.sender] = _balances[msg.sender].add(amount);
-            lpToken.safeTransferFrom(msg.sender, address(this), amount);
+            stakedToken.safeTransferFrom(msg.sender, address(this), amount);
             emit Staked(msg.sender, amount);
         }
     }
@@ -156,9 +170,9 @@ contract CourtFarming {
         updateReward(msg.sender);
 
         if (amount > 0) {
-            _totalSupply = _totalSupply.sub(amount);
+            _totalStaked = _totalStaked.sub(amount);
             _balances[msg.sender] = _balances[msg.sender].sub(amount);
-            lpToken.safeTransfer(msg.sender, amount);
+            stakedToken.safeTransfer(msg.sender, amount);
             emit Unstaked(msg.sender, amount);
         }
 
@@ -172,36 +186,36 @@ contract CourtFarming {
         }
     }
 
-    function claimReward() public returns (uint256){
+    function claimReward() public returns (TransferRewardState ){
         updateReward(msg.sender);
 
         uint256 reward = _rewards[msg.sender];
-        // TODO: chose if or require
+
         if (reward > 0) {
             _rewards[msg.sender] = 0;
             courtToken.mint(msg.sender, reward);
             emit ClaimReward(msg.sender, reward);
         }
-        return reward;
+         return TransferRewardState.Succeeded;
     }
 
-    function claimIncvReward() public returns (uint256){
-        // TODO: chose if or require
-        if (incvLocked && block.timestamp < _incvLockTime) {
-            return 0;
+    function claimIncvReward() public returns (TransferRewardState ){
+
+        if (block.timestamp < incvLockTime) {
+            return TransferRewardState.RewardsStillLocked;
         }
 
         updateReward(msg.sender);
 
         uint256 incvReward = _incvRewards[msg.sender];
-        // TODO: chose if or require
+
         if (incvReward > 0) {
             _incvRewards[msg.sender] = 0;
             courtToken.mint(msg.sender, incvReward);
             emit ClaimIncentiveReward(msg.sender, incvReward);
         }
 
-        return incvReward;
+        return TransferRewardState.Succeeded;
     }
 
 
@@ -209,13 +223,13 @@ contract CourtFarming {
         updateReward(msg.sender);
         uint256 reward = _rewards[msg.sender];
 
-        // TODO: chose if or require
+
         if (amount > reward || courtStakeAddress == address(0)) {
             return false;
         }
 
-        _rewards[msg.sender] -= amount;
-        // no need to use safe math sub, since there is check for amount > reward
+        _rewards[msg.sender] -= amount; // no need to use safe math sub, since there is check for amount > reward
+
         courtToken.mint(address(this), amount);
 
         ICourtStake courtStake = ICourtStake(courtStakeAddress);
@@ -228,22 +242,23 @@ contract CourtFarming {
         updateReward(msg.sender);
         uint256 incvReward = _incvRewards[msg.sender];
 
-        // TODO: chose if or require
+
         if (amount > incvReward || courtStakeAddress == address(0)) {
             return false;
         }
 
-        _incvRewards[msg.sender] -= amount;
-        // no need to use safe math sub, since there is check for amount > reward
+        _incvRewards[msg.sender] -= amount;  // no need to use safe math sub, since there is check for amount > reward
+
         courtToken.mint(address(this), amount);
 
         ICourtStake courtStake = ICourtStake(courtStakeAddress);
-        courtStake.lockedStake(amount, _incvLockTime, msg.sender);
-        emit StakeRewards(msg.sender, amount, _incvLockTime);
+        courtStake.lockedStake(amount, incvLockTime, msg.sender);
+        emit StakeRewards(msg.sender, amount, incvLockTime);
     }
 
     function setCourtStake(address courtStakeAdd) public {
-        require(msg.sender == _owner, "only contract owner can change");
+        require(msg.sender == owner, "only contract owner can change");
+
         address oldAddress = courtStakeAddress;
         courtStakeAddress = courtStakeAdd;
 
@@ -261,18 +276,18 @@ contract CourtFarming {
         uint256 incvAccRewardPerToken = _incvAccRewardPerToken;
 
         // update accRewardPerToken, in case totalSupply is zero; do not increment accRewardPerToken
-        if (totalSupply() > 0) {
-            uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
+        if (_totalStaked > 0) {
+            uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
             if (lastRewardBlock > _lastUpdateBlock) {
                 accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_rewardPerBlock).div(totalSupply())
+                .mul(_rewardPerBlock).div(_totalStaked)
                 .add(accRewardPerToken);
             }
 
-            uint256 incvLastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock : _incvFinishBlock;
+            uint256 incvLastRewardBlock = cnBlock < incvFinishBlock ? cnBlock : incvFinishBlock;
             if (incvLastRewardBlock > _lastUpdateBlock) {
                 incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
-                .mul(_incvRewardPerBlock).div(totalSupply())
+                .mul(_incvRewardPerBlock).div(_totalStaked)
                 .add(incvAccRewardPerToken);
             }
         }
@@ -288,12 +303,28 @@ contract CourtFarming {
         .add(_incvRewards[account]);
     }
 
-    function info() external view returns (uint256 cBlockNumber, uint256 rewardPerBlock, uint256 rewardFinishBlock, uint256 incvRewardfinishBlock, uint256 incvRewardPerBlock) {
+    function rewardInfo() external view returns (uint256 cBlockNumber, uint256 rewardPerBlock, uint256 rewardFinishBlock, uint256 rewardFinishTime, uint256 rewardLockTime) {
         cBlockNumber = blockNumber();
-        rewardFinishBlock = _finishBlock;
-        incvRewardfinishBlock = _incvFinishBlock;
+        rewardFinishBlock = finishBlock;
         rewardPerBlock = _rewardPerBlock.div(1e18);
+        if( cBlockNumber < finishBlock){
+            rewardFinishTime = block.timestamp.add(finishBlock.sub(cBlockNumber).mul(15));
+        }else{
+            rewardFinishTime = block.timestamp.sub(cBlockNumber.sub(finishBlock).mul(15));
+        }
+        rewardLockTime=0;
+    }
+
+    function incvRewardInfo() external view returns (uint256 cBlockNumber, uint256 incvRewardPerBlock, uint256 incvRewardFinishBlock, uint256 incvRewardFinishTime, uint256 incvRewardLockTime) {
+        cBlockNumber = blockNumber();
+        incvRewardFinishBlock = incvFinishBlock;
         incvRewardPerBlock = _incvRewardPerBlock.div(1e18);
+        if( cBlockNumber < incvFinishBlock){
+            incvRewardFinishTime = block.timestamp.add(incvFinishBlock.sub(cBlockNumber).mul(15));
+        }else{
+            incvRewardFinishTime = block.timestamp.sub(cBlockNumber.sub(incvFinishBlock).mul(15));
+        }
+        incvRewardLockTime=incvLockTime;
     }
 
 
@@ -310,17 +341,17 @@ contract CourtFarming {
         uint256 incvAccRewardPerToken = _incvAccRewardPerToken;
         // update accRewardPerToken, in case totalSupply is zero do; not increment accRewardPerToken
 
-        uint256 lastRewardBlock = cnBlock < _finishBlock ? cnBlock : _finishBlock;
+        uint256 lastRewardBlock = cnBlock < finishBlock ? cnBlock : finishBlock;
         if (lastRewardBlock > _lastUpdateBlock) {
             accRewardPerToken = lastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_rewardPerBlock).div(totalSupply().add(amount))
+            .mul(_rewardPerBlock).div(_totalStaked.add(amount))
             .add(accRewardPerToken);
         }
 
-        uint256 incvLastRewardBlock = cnBlock < _incvFinishBlock ? cnBlock : _incvFinishBlock;
+        uint256 incvLastRewardBlock = cnBlock < incvFinishBlock ? cnBlock : incvFinishBlock;
         if (incvLastRewardBlock > _lastUpdateBlock) {
             incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_incvRewardPerBlock).div(totalSupply().add(amount))
+            .mul(_incvRewardPerBlock).div(_totalStaked.add(amount))
             .add(incvAccRewardPerToken);
         }
 
@@ -338,15 +369,37 @@ contract CourtFarming {
         incvReward = incvRewardsPerBlock.mul(5760);
     }
 
-    function balanceOf(address account) public view returns (uint256) {
+    function lastUpdateBlock() external view returns(uint256) {
+        return _lastUpdateBlock;
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
+    function totalStaked() external view returns (uint256) {
+        return _totalStaked;
     }
 
     function blockNumber() public view returns (uint256) {
-        return block.number;
+        if(timeFrezed){
+            return frezedBlock + lockShift;
+        }
+        return block.number +lockShift;
+    }
+
+    ///// for demo
+    bool public timeFrezed;
+    uint256 frezedBlock =0;
+    function frezeBlock(bool flag) public{
+        timeFrezed = flag;
+        frezedBlock = blockNumber().sub(lockShift);
+    }
+    function isTimeFrerzed() public view returns(bool){
+        return timeFrezed;
+    }
+    uint256 lockShift;
+    function increaseBlock(uint256 count) public{
+        lockShift+=count;
     }
 }
