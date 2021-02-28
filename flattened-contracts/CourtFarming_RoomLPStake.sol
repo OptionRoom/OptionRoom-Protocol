@@ -380,19 +380,15 @@ library SafeERC20 {
     }
 }
 
-// This contract will have three deployments with different configurations.
-// Reward "COURT" farming; from staking of the ROOM token.
-// Reward "COURT" farming; from staking of ROOM liquidity pool token (Liquidity pool for ROOM/ETH).
-// Reward "COURT" farming; from staking of COURT liquidity pool token (Liquidity pool for COURT/ETH).
 contract CourtFarming_RoomLPStake {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     // TODO: set the correct lpToken address
-    IERC20 public constant stakedToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71faa);
+    IERC20 public constant stakedToken = IERC20(0x71623C84fE967a7D41843c56D7D3D89F11D71fa);
 
     //TODO: set the correct Court Token address
-    IMERC20 public constant courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1f);
+    IMERC20 public constant courtToken = IMERC20(0xD09534141358B39AC0A3d2A5c48603eb110f3d1);
 
     uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
@@ -426,10 +422,6 @@ contract CourtFarming_RoomLPStake {
         RewardsStillLocked
     }
 
-    // To minimize the actions required to stake COURT, you just put the address
-    // of the contract that holds the governance COURT staking.
-    // TODO: Tareq Doufish, testing is required for the function
-    // that sets the address and do the actual transfer.
     address public courtStakeAddress;
 
     event Staked(address indexed user, uint256 amount);
@@ -445,11 +437,11 @@ contract CourtFarming_RoomLPStake {
         owner = msg.sender;
         
         // TODO: fill this info 
-        uint256 totalRewards;
-        uint256 rewardsPeriodInDays;
-        uint256 incvTotalRewards;
-        uint256 incvRewardsPeriodInDays;
-        incvLockTime =0;
+        uint256 totalRewards = x;
+        uint256 rewardsPeriodInDays =x;
+        uint256 incvTotalRewards =x ;
+        uint256 incvRewardsPeriodInDays =x;
+        incvLockTime =x;   // check https://www.epochconverter.com/ for timestamp
         
          _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, incvLockTime);
         
@@ -763,24 +755,7 @@ contract CourtFarming_RoomLPStake {
     }
 
     function blockNumber() public view returns (uint256) {
-        if(timeFrezed){
-            return frezedBlock + lockShift;
-        }
-        return block.number +lockShift;
+        return block.number;
     }
     
-    ///// for demo
-    bool public timeFrezed;
-    uint256 frezedBlock =0;
-    function frezeBlock(bool flag) public{
-        timeFrezed = flag;
-        frezedBlock = blockNumber().sub(lockShift);
-    }
-    function isTimeFrerzed() public view returns(bool){
-        return timeFrezed;
-    }
-    uint256 lockShift;
-    function increaseBlock(uint256 count) public{
-        lockShift+=count;
-    }
 }
