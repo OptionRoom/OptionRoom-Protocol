@@ -403,10 +403,7 @@ contract CourtFarming_RoomStake {
     mapping(address => uint256) private _rewards; // rewards balances
     mapping(address => uint256) private _prevAccRewardPerToken; // previous accumulative reward per token (for a user)
 
-
-
     // incentive rewards
-
     uint256 public incvFinishBlock; //  finish incentive rewarding block number
     uint256 private _incvRewardPerBlock; // incentive reward per block
     uint256 private _incvAccRewardPerToken; // accumulative reward per token
@@ -631,7 +628,7 @@ contract CourtFarming_RoomStake {
         emit CourtStakeChanged(oldAddress, courtStakeAdd);
     }
 
-    function rewards(address account) external view returns (uint256 reward, uint256 incvReward) {
+    function rewards(address account) public view returns (uint256 reward, uint256 incvReward) {
         // read version of update
         uint256 cnBlock = blockNumber();
         uint256 accRewardPerToken = _accRewardPerToken;
@@ -757,14 +754,12 @@ contract CourtFarming_RoomStake {
         return block.timestamp  + (blockShift *15);
     }
     
-    function getVestedAmount(address beneficiary, uint256 time) public  view returns(uint256){
+    function getVestedAmount(uint256 lockedAmount, uint256 time) internal  view returns(uint256){
         
         // if time < StartReleasingTime: then return 0
         if(time < incvStartReleasingTime){
             return 0;
         }
-
-        uint256 lockedAmount = _incvRewards[beneficiary];
 
         // if locked amount 0 return 0
         if (lockedAmount == 0){
@@ -790,13 +785,10 @@ contract CourtFarming_RoomStake {
         return vestedAmount;
     }
     
-    function getIncvReleasableAmount(address beneficiary) public  view returns(uint256){
-        return getVestedAmount( beneficiary, getCurrentTime()).sub(incvWithdrawn[beneficiary]);
-    }
     
     function incvRewardClaim() public returns(uint256 amount){
         updateReward(msg.sender);
-        amount = getIncvReleasableAmount( msg.sender);
+        amount = getVestedAmount(_incvRewards[msg.sender], getCurrentTime()).sub(incvWithdrawn[msg.sender]);
         
         if(amount > 0){
             incvWithdrawn[msg.sender] = incvWithdrawn[msg.sender].add(amount);
@@ -807,7 +799,7 @@ contract CourtFarming_RoomStake {
         }
     }
     
-    function getBeneficiaryInfo(address ibeneficiary) public view
+    function getBeneficiaryInfo(address ibeneficiary) external view
     returns(address beneficiary,
         uint256 totalLocked,
         uint256 withdrawn,
@@ -820,15 +812,16 @@ contract CourtFarming_RoomStake {
         
         totalLocked = _incvRewards[ibeneficiary];
         withdrawn = incvWithdrawn[ibeneficiary];
-        releasableAmount = getIncvReleasableAmount(ibeneficiary);
-        nextBatchTime = getIncNextBatchTime( ibeneficiary, currentTime);
+        ( , uint256 incvReward) = rewards(ibeneficiary);
+        releasableAmount = getVestedAmount(incvReward, getCurrentTime()).sub(incvWithdrawn[beneficiary]);
+        nextBatchTime = getIncNextBatchTime(incvReward, ibeneficiary, currentTime);
         
     }
     
-    function getIncNextBatchTime(address beneficiary, uint256 time) public view returns(uint256){
+    function getIncNextBatchTime(uint256 lockedAmount, address beneficiary, uint256 time) internal view returns(uint256){
 
         // if total vested equal to total locked then return 0
-        if(getVestedAmount(beneficiary, time) == _incvRewards[beneficiary]){
+        if(getVestedAmount(lockedAmount, time) == _incvRewards[beneficiary]){
             return 0;
         }
 
@@ -875,4 +868,3 @@ contract CourtFarming_RoomStake {
     }
     
 }
-
