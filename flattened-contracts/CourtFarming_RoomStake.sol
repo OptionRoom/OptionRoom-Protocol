@@ -422,7 +422,7 @@ contract CourtFarming_RoomStake {
         RewardsStillLocked
     }
 
-    
+
     address public courtStakeAddress;
 
     event Staked(address indexed user, uint256 amount);
@@ -436,17 +436,17 @@ contract CourtFarming_RoomStake {
     constructor () public {
 
         owner = msg.sender;
-        
-        // TODO: fill this info 
+
+        // TODO: fill this info
         uint256 totalRewards  = 45000e18;
         uint256 rewardsPeriodInDays = 450;
         uint256 incvTotalRewards = 18000e18;
         uint256 incvRewardsPeriodInDays = 60;
-        // TODO: fill this info 
+        // TODO: fill this info
         incvStartReleasingTime = 1640995200; // 01/01/2022 // check https://www.epochconverter.com/ for timestamp
         incvBatchPeriod = 1 days;
         incvBatchCount = 90;
-        
+
          _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, incvStartReleasingTime);
 
         _lastUpdateBlock = blockNumber();
@@ -740,22 +740,24 @@ contract CourtFarming_RoomStake {
         return _totalStaked;
     }
 
+    // TODO: Please clean this code from blockShift its only for testing.
     function blockNumber() public view returns (uint256) {
         if(timeFrezed){
             return frezedBlock + blockShift;
         }
         return block.number +blockShift;
     }
-    
+
+    // TODO: Please clean this code from blockShift its only for testing.
     function getCurrentTime() public view returns(uint256){
         if(timeFrezed){
             return frezedTime  + (blockShift *15);
         }
         return block.timestamp  + (blockShift *15);
     }
-    
+
     function getVestedAmount(uint256 lockedAmount, uint256 time) internal  view returns(uint256){
-        
+
         // if time < StartReleasingTime: then return 0
         if(time < incvStartReleasingTime){
             return 0;
@@ -784,12 +786,12 @@ contract CourtFarming_RoomStake {
 
         return vestedAmount;
     }
-    
-    
+
+
     function incvRewardClaim() public returns(uint256 amount){
         updateReward(msg.sender);
         amount = getVestedAmount(_incvRewards[msg.sender], getCurrentTime()).sub(incvWithdrawn[msg.sender]);
-        
+
         if(amount > 0){
             incvWithdrawn[msg.sender] = incvWithdrawn[msg.sender].add(amount);
 
@@ -798,7 +800,7 @@ contract CourtFarming_RoomStake {
             emit ClaimIncentiveReward(msg.sender, amount);
         }
     }
-    
+
     function getBeneficiaryInfo(address ibeneficiary) external view
     returns(address beneficiary,
         uint256 totalLocked,
@@ -809,15 +811,15 @@ contract CourtFarming_RoomStake {
 
         beneficiary = ibeneficiary;
         currentTime = getCurrentTime();
-        
+
         totalLocked = _incvRewards[ibeneficiary];
         withdrawn = incvWithdrawn[ibeneficiary];
         ( , uint256 incvReward) = rewards(ibeneficiary);
         releasableAmount = getVestedAmount(incvReward, getCurrentTime()).sub(incvWithdrawn[beneficiary]);
         nextBatchTime = getIncNextBatchTime(incvReward, ibeneficiary, currentTime);
-        
+
     }
-    
+
     function getIncNextBatchTime(uint256 lockedAmount, address beneficiary, uint256 time) internal view returns(uint256){
 
         // if total vested equal to total locked then return 0
@@ -845,6 +847,7 @@ contract CourtFarming_RoomStake {
 
     }
 
+    // TODO: Please remove this code its only for testing purpose.
     ///// for demo
     bool public timeFrezed;
     uint256 frezedBlock =0;
@@ -861,10 +864,10 @@ contract CourtFarming_RoomStake {
     function increaseBlock(uint256 count) public{
         blockShift+=count;
     }
-    
-    
+
+
     function getblockShift() external view returns(uint256){
         return blockShift;
     }
-    
+
 }
