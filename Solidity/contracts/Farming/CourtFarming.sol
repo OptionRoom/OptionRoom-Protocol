@@ -35,14 +35,17 @@ contract CourtFarming {
 
 
     // incentive rewards
-    uint256 public incvLockTime;
+
     uint256 public incvFinishBlock; //  finish incentive rewarding block number
     uint256 private _incvRewardPerBlock; // incentive reward per block
     uint256 private _incvAccRewardPerToken; // accumulative reward per token
     mapping(address => uint256) private _incvRewards; // reward balances
     mapping(address => uint256) private _incvPrevAccRewardPerToken;// previous accumulative reward per token (for a user)
 
-
+    uint256 public incvStartReleasingTime;  // incentive releasing time
+    uint256 public incvBatchPeriod; // incentive batch period
+    uint256 public incvBatchCount; // incentive batch count
+    mapping(address => uint256) public  incvWithdrawn;
 
     address public owner;
 
@@ -51,10 +54,7 @@ contract CourtFarming {
         RewardsStillLocked
     }
 
-    // To minimize the actions required to stake COURT, you just put the address
-    // of the contract that holds the governance COURT staking.
-    // TODO: Tareq Doufish, testing is required for the function
-    // that sets the address and do the actual transfer.
+    
     address public courtStakeAddress;
 
     event Staked(address indexed user, uint256 amount);
@@ -69,8 +69,8 @@ contract CourtFarming {
         uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays) public {
 
         owner = msg.sender;
-        incvLockTime =0;
-         _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, incvLockTime);
+
+         _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, 0);
 
         _lastUpdateBlock = blockNumber();
     }
@@ -90,7 +90,7 @@ contract CourtFarming {
         _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
         incvFinishBlock = blockNumber().add(incvRewardBlockCount);
 
-        incvLockTime = iLockTime;
+        incvStartReleasingTime = iLockTime;
     }
 
     function changeStakeParameters(uint256 totalRewards, uint256 rewardsPeriodInDays, uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
@@ -100,7 +100,7 @@ contract CourtFarming {
 
         _stakeParametrsCalculation(totalRewards, rewardsPeriodInDays, incvTotalRewards, incvRewardsPeriodInDays, iLockTime);
 
-        emit StakeParametersChanged(_rewardPerBlock, finishBlock, _incvRewardPerBlock, incvFinishBlock, incvLockTime);
+        emit StakeParametersChanged(_rewardPerBlock, finishBlock, _incvRewardPerBlock, incvFinishBlock, incvStartReleasingTime);
     }
 
     function updateReward(address account) public {
@@ -199,24 +199,6 @@ contract CourtFarming {
          return TransferRewardState.Succeeded;
     }
 
-    function claimIncvReward() public returns (TransferRewardState ){
-
-        if (block.timestamp < incvLockTime) {
-            return TransferRewardState.RewardsStillLocked;
-        }
-
-        updateReward(msg.sender);
-
-        uint256 incvReward = _incvRewards[msg.sender];
-
-        if (incvReward > 0) {
-            _incvRewards[msg.sender] = 0;
-            courtToken.mint(msg.sender, incvReward);
-            emit ClaimIncentiveReward(msg.sender, incvReward);
-        }
-
-        return TransferRewardState.Succeeded;
-    }
 
 
     function stakeRewards(uint256 amount) public returns (bool) {
@@ -233,12 +215,12 @@ contract CourtFarming {
         courtToken.mint(address(this), amount);
 
         ICourtStake courtStake = ICourtStake(courtStakeAddress);
-        courtStake.lockedStake(amount, 0, msg.sender);
+        courtStake.lockedStake(amount, msg.sender, 0, 1,0);
         emit StakeRewards(msg.sender, amount, 0);
 
     }
 
-    function stakeIncRewards(uint256 amount) public returns (bool) {
+    function stakeIncvRewards(uint256 amount) public returns (bool) {
         updateReward(msg.sender);
         uint256 incvReward = _incvRewards[msg.sender];
 
@@ -252,8 +234,8 @@ contract CourtFarming {
         courtToken.mint(address(this), amount);
 
         ICourtStake courtStake = ICourtStake(courtStakeAddress);
-        courtStake.lockedStake(amount, incvLockTime, msg.sender);
-        emit StakeRewards(msg.sender, amount, incvLockTime);
+        courtStake.lockedStake(amount,  msg.sender, incvStartReleasingTime, incvBatchCount, incvBatchPeriod);
+        emit StakeRewards(msg.sender, amount, incvStartReleasingTime);
     }
 
     function setCourtStake(address courtStakeAdd) public {
@@ -269,7 +251,7 @@ contract CourtFarming {
         emit CourtStakeChanged(oldAddress, courtStakeAdd);
     }
 
-    function rewards(address account) external view returns (uint256 reward, uint256 incvReward) {
+    function rewards(address account) public view returns (uint256 reward, uint256 incvReward) {
         // read version of update
         uint256 cnBlock = blockNumber();
         uint256 accRewardPerToken = _accRewardPerToken;
@@ -324,7 +306,7 @@ contract CourtFarming {
         }else{
             incvRewardFinishTime = block.timestamp.sub(cBlockNumber.sub(incvFinishBlock).mul(15));
         }
-        incvRewardLockTime=incvLockTime;
+        incvRewardLockTime=incvStartReleasingTime;
     }
 
 
@@ -383,23 +365,129 @@ contract CourtFarming {
 
     function blockNumber() public view returns (uint256) {
         if(timeFrezed){
-            return frezedBlock + lockShift;
+            return frezedBlock + blockShift;
         }
-        return block.number +lockShift;
+        return block.number +blockShift;
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+        if(timeFrezed){
+            return frezedTime  + (blockShift *15);
+        }
+        return block.timestamp  + (blockShift *15);
+    }
+    
+    function getVestedAmount(uint256 lockedAmount, uint256 time) internal  view returns(uint256){
+        
+        // if time < StartReleasingTime: then return 0
+        if(time < incvStartReleasingTime){
+            return 0;
+        }
+
+        // if locked amount 0 return 0
+        if (lockedAmount == 0){
+            return 0;
+        }
+
+        // elapsedBatchCount = ((time - startReleasingTime) / batchPeriod) + 1
+        uint256 elapsedBatchCount =
+        time.sub(incvStartReleasingTime)
+        .div(incvBatchPeriod)
+        .add(1);
+
+        // vestedAmount = lockedAmount  * elapsedBatchCount / batchCount
+        uint256  vestedAmount =
+        lockedAmount
+        .mul(elapsedBatchCount)
+        .div(incvBatchCount);
+
+        if(vestedAmount > lockedAmount){
+            vestedAmount = lockedAmount;
+        }
+
+        return vestedAmount;
+    }
+    
+    
+    function incvRewardClaim() public returns(uint256 amount){
+        updateReward(msg.sender);
+        amount = getVestedAmount(_incvRewards[msg.sender], getCurrentTime()).sub(incvWithdrawn[msg.sender]);
+        
+        if(amount > 0){
+            incvWithdrawn[msg.sender] = incvWithdrawn[msg.sender].add(amount);
+
+            courtToken.mint(msg.sender, amount);
+
+            emit ClaimIncentiveReward(msg.sender, amount);
+        }
+    }
+    
+    function getBeneficiaryInfo(address ibeneficiary) external view
+    returns(address beneficiary,
+        uint256 totalLocked,
+        uint256 withdrawn,
+        uint256 releasableAmount,
+        uint256 nextBatchTime,
+        uint256 currentTime){
+
+        beneficiary = ibeneficiary;
+        currentTime = getCurrentTime();
+        
+        totalLocked = _incvRewards[ibeneficiary];
+        withdrawn = incvWithdrawn[ibeneficiary];
+        ( , uint256 incvReward) = rewards(ibeneficiary);
+        releasableAmount = getVestedAmount(incvReward, getCurrentTime()).sub(incvWithdrawn[beneficiary]);
+        nextBatchTime = getIncNextBatchTime(incvReward, ibeneficiary, currentTime);
+        
+    }
+    
+    function getIncNextBatchTime(uint256 lockedAmount, address beneficiary, uint256 time) internal view returns(uint256){
+
+        // if total vested equal to total locked then return 0
+        if(getVestedAmount(lockedAmount, time) == _incvRewards[beneficiary]){
+            return 0;
+        }
+
+        // if time less than startReleasingTime: then return sartReleasingTime
+        if(time <= incvStartReleasingTime){
+            return incvStartReleasingTime;
+        }
+
+        // find the next batch time
+        uint256 elapsedBatchCount =
+        time.sub(incvStartReleasingTime)
+        .div(incvBatchPeriod)
+        .add(1);
+
+        uint256 nextBatchTime =
+        elapsedBatchCount
+        .mul(incvBatchPeriod)
+        .add(incvStartReleasingTime);
+
+        return nextBatchTime;
+
     }
 
     ///// for demo
     bool public timeFrezed;
     uint256 frezedBlock =0;
+    uint256 frezedTime = 0;
     function frezeBlock(bool flag) public{
+        frezedBlock = blockNumber().sub(blockShift);
+        frezedTime = getCurrentTime().sub(blockShift*15);
         timeFrezed = flag;
-        frezedBlock = blockNumber().sub(lockShift);
     }
     function isTimeFrerzed() public view returns(bool){
         return timeFrezed;
     }
-    uint256 lockShift;
+    uint256 public blockShift;
     function increaseBlock(uint256 count) public{
-        lockShift+=count;
+        blockShift+=count;
     }
+    
+    
+    function getblockShift() external view returns(uint256){
+        return blockShift;
+    }
+    
 }
