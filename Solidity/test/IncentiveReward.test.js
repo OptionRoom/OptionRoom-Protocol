@@ -24,12 +24,18 @@ describe("Stacking incentive rewards", function () {
         this.lpToken = await this.dummyLPToken.deploy();
         this.court = await this.dummaryCourtToken.deploy( );
 
+        // Another court address that we will provide tokens to.
+        this.courtTokenDeployed = await this.dummaryCourtToken.deploy();
+
         await this.farming.deployed()
         await this.lpToken.deployed();
         await this.court.deployed();
+        await this.courtTokenDeployed.deployed();
 
         await this.farming.setLPToken(this.lpToken.address);
         await this.farming.setStakingToken(this.court.address);
+
+        await this.farming.setCourtStake(this.courtTokenDeployed.address);
 
         await this.lpToken.transfer(this.alice.address, "1000")
 
@@ -48,6 +54,10 @@ describe("Stacking incentive rewards", function () {
         const totalStaked = await this.farming.totalStaked();
         expect(totalStaked).to.equal(getBigNumber(0))
         const rewardsInformation = await this.farming.rewardInfo();
+    })
+
+    it("Should revert if you try to change ICourtStake if you are not owner ", async function () {
+        await expect(this.farming.connect(this.bob).setCourtStake(this.courtTokenDeployed.address)).to.be.revertedWith("only contract owner can change")
     })
 
     it("Should revert if you try to stack more tokens than you have ", async function () {
@@ -75,7 +85,14 @@ describe("Stacking incentive rewards", function () {
         expect(bobRewards.incvReward).to.equal(getBigNumber(1));
     })
 
-    it("Shold not give rewards becuase the time is not valid ", async function () {
+    function getNextDate(incentiveReleaseTime) {
+        const today = new Date(Number(incentiveReleaseTime + "") * 1000);
+        let tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        return tomorrow.getTime();
+    }
+
+    it("Should not give rewards because the time is not valid ", async function () {
         // Time before the time set in contract
         await setTime(1616523110);
         let currentBlock = await this.farming.blockNumber();
@@ -91,7 +108,8 @@ describe("Stacking incentive rewards", function () {
         // the rewards and see weather we get them or not.
         // await setTime(1616523140);
         currentTime = await this.farming.getCurrentTime();
-        await this.farming.connect(this.bob).claimIncvReward();
+        // await this.farming.connect(this.bob).claimIncvReward();
+        await this.farming.connect(this.bob).incvRewardClaim();
         let balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
         expect(balanceOfCourtToken).to.equal(getBigNumber(0))
     })
@@ -105,12 +123,127 @@ describe("Stacking incentive rewards", function () {
         let bobRewards = await this.farming.rewards(this.bob.address);
         expect(bobRewards.incvReward).to.equal(getBigNumber(0))
 
+        // The batch count at the testing mock is 1
         let balance = await etherBalance(this.bob.address);
         await this.farming.connect(this.bob).stake("1");
         await time.advanceBlockTo(Number(currentBlock) + Number(10));
 
-        await this.farming.connect(this.bob).claimIncvReward();
+        // await this.farming.connect(this.bob).claimIncvReward();
+        await this.farming.connect(this.bob).incvRewardClaim();
         let balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
         expect(balanceOfCourtToken).to.equal(getBigNumber(10))
+    })
+
+    it("Should be able to claim incentive reward after another progression in the block number", async function () {
+        // We will set the time of the contract of a time that we can manage to collect
+        // the rewards and see weather we get them or not.
+        // await setTime(1640995222);
+        let cb = await this.farming.blockNumber();
+
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0))
+
+        // The batch count at the testing mock is 1
+        let balance = await etherBalance(this.bob.address);
+        await this.farming.connect(this.bob).stake("1");
+        await time.advanceBlockTo(Number(cb) + Number(1));
+
+        // await this.farming.connect(this.bob).claimIncvReward();
+        await this.farming.connect(this.bob).incvRewardClaim();
+        let balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(1))
+
+
+        cb = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(cb) + Number(1));
+        balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(1))
+    })
+
+    it("Should be able to claim incentive reward after another progression in the block number", async function () {
+        let cb = await this.farming.blockNumber();
+
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0))
+
+        // The batch count at the testing mock is 1
+        let balance = await etherBalance(this.bob.address);
+        await this.farming.connect(this.bob).stake("1");
+        await time.advanceBlockTo(Number(cb) + Number(1));
+
+        await this.farming.connect(this.bob).incvRewardClaim();
+        let balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(1))
+
+        // Claim incentive calls a block propagation.
+        await this.farming.connect(this.bob).incvRewardClaim();
+        balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(2))
+
+        await this.farming.connect(this.bob).incvRewardClaim();
+        balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(3))
+    })
+
+    it("Should return the correct incentive reward amount", async function () {
+        let cb = await this.farming.blockNumber();
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0))
+
+        await this.farming.connect(this.bob).stake("1");
+        cb = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(cb) + Number(1));
+
+        let aboutAmount = await this.farming.getBeneficiaryInfo(this.bob.address);
+        expect(aboutAmount.releasableAmount).to.equal(getBigNumber(1));
+    })
+
+    it("Should return the correct details from calling incentive information", async function () {
+        let cb = await this.farming.blockNumber();
+
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0))
+
+        await this.farming.connect(this.bob).stake("1");
+        await time.advanceBlockTo(Number(cb) + Number(1));
+        cb = await this.farming.blockNumber();
+        let result = await this.farming.incvRewardInfo();
+        expect(result.cBlockNumber).to.equal(cb)
+        expect(result.incvRewardPerBlock).to.equal(getBigNumber(1))
+    })
+
+    it("Should return the correct next batch time for the incentive reward", async function () {
+        let cb = await this.farming.blockNumber();
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0))
+
+        await this.farming.connect(this.bob).stake("1");
+        cb = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(cb) + Number(1));
+
+        let incRealseTime = await this.farming.getIncReleaseTime();
+        let nextDay = getNextDate(incRealseTime)/1000;
+
+        let benInfo = await this.farming.getBeneficiaryInfo(this.bob.address);
+        let nextTime = Number(benInfo.nextBatchTime.toString());
+        expect(nextTime).to.equal(nextDay);
+    })
+
+    it("Should allow staking of the incentive rewards ", async function () {
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0));
+        await this.farming.connect(this.bob).stake("1");
+        let currentBlock = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(currentBlock) + Number(10));
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(10));
+
+        await this.farming.connect(this.bob).stakeIncvRewards(getBigNumber(10));
+
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(1));
+        // // We get this one from staking the incentive rewards...
+        let balanceOfContract = await this.court.balanceOf(this.farming.address);
+        expect(balanceOfContract).to.equal(getBigNumber(10))
     })
 })

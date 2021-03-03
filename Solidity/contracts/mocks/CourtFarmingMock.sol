@@ -20,7 +20,12 @@ contract CourtFarmingMock is CourtFarming {
 
     constructor() public CourtFarming(totalRewards, rewardsPeriodInDays,
         incvTotalRewards, incvRewardsPeriodInDays) {
-        incvLockTime = incvLockTimeAssigned;
+//        incvLockTime = incvLockTimeAssigned;
+
+        // Taken from the testing deployed
+        incvStartReleasingTime = 1640995200; // 01/01/2022 // check https://www.epochconverter.com/ for timestamp
+        incvBatchPeriod = 1 days;
+        incvBatchCount = 1;
     }
 
     function changeToContractAttributes() public {
@@ -37,5 +42,9 @@ contract CourtFarmingMock is CourtFarming {
 
     function getCurrentTime() public view returns (uint256){
         return block.timestamp;
+    }
+
+    function getIncReleaseTime() public view returns (uint256) {
+        return incvStartReleasingTime;
     }
 }
