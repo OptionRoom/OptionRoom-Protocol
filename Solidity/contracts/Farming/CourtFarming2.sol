@@ -56,21 +56,20 @@ contract CourtFarming {
     event CourtStakeChanged(address oldAddress, address newAddress);
     event StakeParametersChanged(uint256 incvRewardPerBlock, uint256 incvRewardFinsishBlock, uint256 incvLockTime);
 
-    constructor (
-        uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays) public {
+    constructor (uint256 incvRewardsPerBlock, uint256 incvRewardsPeriodInDays) public {
 
         owner = msg.sender;
 
-         _stakeParametrsCalculation(incvTotalRewards, incvRewardsPeriodInDays, 0);
+         _stakeParametrsCalculation(incvRewardsPerBlock, incvRewardsPeriodInDays, 0);
 
         _lastUpdateBlock = blockNumber();
     }
 
-    function _stakeParametrsCalculation(uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) internal{
+    function _stakeParametrsCalculation(uint256 incvRewardsPerBlock, uint256 incvRewardsPeriodInDays, uint256 iLockTime) internal{
 
 
         uint256 incvRewardBlockCount = incvRewardsPeriodInDays * 5760;
-        uint256 incvRewardPerBlock = ((incvTotalRewards * 1e18 )/ incvRewardBlockCount) / 1e18;
+        uint256 incvRewardPerBlock = incvRewardsPerBlock;
 
         _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
         incvFinishBlock = blockNumber().add(incvRewardBlockCount);
@@ -78,12 +77,12 @@ contract CourtFarming {
         incvStartReleasingTime = iLockTime;
     }
 
-    function changeStakeParameters( uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
+    function changeStakeParameters( uint256 incvRewardsPerBlock, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
 
         require(msg.sender == owner, "can be called by owner only");
         updateReward(address(0));
 
-        _stakeParametrsCalculation(incvTotalRewards, incvRewardsPeriodInDays, iLockTime);
+        _stakeParametrsCalculation(incvRewardsPerBlock, incvRewardsPeriodInDays, iLockTime);
 
         emit StakeParametersChanged( _incvRewardPerBlock, incvFinishBlock, incvStartReleasingTime);
     }

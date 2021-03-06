@@ -431,36 +431,36 @@ contract CourtFarming_RoomLPStake {
         owner = msg.sender;
 
         // TODO: fill this info
-        uint256 incvTotalRewards = 18000e18;
+        uint256 incvRewardsPerBlock = 1e18;
         uint256 incvRewardsPeriodInDays = 60;
         // TODO: fill this info
-        incvStartReleasingTime = 1640995200; // 01/01/2022 // check https://www.epochconverter.com/ for timestamp
+        incvStartReleasingTime = 1619827200; // 01/05/2021 // check https://www.epochconverter.com/ for timestamp
         incvBatchPeriod = 1 days;
-        incvBatchCount = 90;
+        incvBatchCount = 1;
 
-         _stakeParametrsCalculation(incvTotalRewards, incvRewardsPeriodInDays, incvStartReleasingTime);
+         _stakeParametrsCalculation(incvRewardsPerBlock, incvRewardsPeriodInDays, incvStartReleasingTime);
 
         _lastUpdateBlock = blockNumber();
     }
 
-    function _stakeParametrsCalculation(uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) internal{
+    function _stakeParametrsCalculation(uint256 incvRewardsPerBlock, uint256 incvRewardsPeriodInDays, uint256 iLockTime) internal{
 
 
         uint256 incvRewardBlockCount = incvRewardsPeriodInDays * 5760;
-        uint256 incvRewardPerBlock = ((incvTotalRewards * 1e18 )/ incvRewardBlockCount) / 1e18;
+        uint256 incvRewardPerBlock = incvRewardsPerBlock;
 
-        _incvRewardPerBlock = incvRewardPerBlock * (1e18);
+        _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
         incvFinishBlock = blockNumber().add(incvRewardBlockCount);
 
         incvStartReleasingTime = iLockTime;
     }
 
-    function changeStakeParameters( uint256 incvTotalRewards, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
+    function changeStakeParameters( uint256 incvRewardsPerBlock, uint256 incvRewardsPeriodInDays, uint256 iLockTime) public {
 
         require(msg.sender == owner, "can be called by owner only");
         updateReward(address(0));
 
-        _stakeParametrsCalculation(incvTotalRewards, incvRewardsPeriodInDays, iLockTime);
+        _stakeParametrsCalculation(incvRewardsPerBlock, incvRewardsPeriodInDays, iLockTime);
 
         emit StakeParametersChanged( _incvRewardPerBlock, incvFinishBlock, incvStartReleasingTime);
     }
@@ -631,11 +631,17 @@ contract CourtFarming_RoomLPStake {
     }
 
     function blockNumber() public view returns (uint256) {
-        return block.number;
+        if(timeFrezed){
+            return frezedBlock + blockShift;
+        }
+        return block.number +blockShift;
     }
     
     function getCurrentTime() public view returns(uint256){
-        return block.timestamp;
+        if(timeFrezed){
+            return frezedTime  + (blockShift *15);
+        }
+        return block.timestamp  + (blockShift *15);
     }
     
     function getVestedAmount(uint256 lockedAmount, uint256 time) internal  view returns(uint256){
@@ -729,4 +735,26 @@ contract CourtFarming_RoomLPStake {
 
     }
 
+    ///// for demo
+    bool public timeFrezed;
+    uint256 frezedBlock =0;
+    uint256 frezedTime = 0;
+    function frezeBlock(bool flag) public{
+        frezedBlock = blockNumber().sub(blockShift);
+        frezedTime = getCurrentTime().sub(blockShift*15);
+        timeFrezed = flag;
+    }
+    function isTimeFrerzed() public view returns(bool){
+        return timeFrezed;
+    }
+    uint256 public blockShift;
+    function increaseBlock(uint256 count) public{
+        blockShift+=count;
+    }
+    
+    
+    function getblockShift() external view returns(uint256){
+        return blockShift;
+    }
+    
 }
