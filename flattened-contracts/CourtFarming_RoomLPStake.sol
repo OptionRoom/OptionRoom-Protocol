@@ -573,7 +573,8 @@ contract CourtFarming_RoomLPStake {
         incvReward = _balances[account]
         .mul(incvAccRewardPerToken.sub(_incvPrevAccRewardPerToken[account]))
         .div(1e18)
-        .add(_incvRewards[account]);
+        .add(_incvRewards[account])
+        .sub(incvWithdrawn[account]);
         
         reward = 0;
     }
