@@ -247,6 +247,8 @@ describe("Stacking incentive rewards", function () {
         expect(balanceOfContract).to.equal(getBigNumber(10))
     })
 
+    // 5760
+
     it("Should redraw and stake again and give the correct results ", async function () {
         let bobRewards = await this.farming.rewards(this.bob.address);
         expect(bobRewards.incvReward).to.equal(getBigNumber(0));
@@ -279,6 +281,57 @@ describe("Stacking incentive rewards", function () {
         await time.advanceBlockTo(Number(currentBlock) + Number(3));
         bobRewards = await this.farming.rewards(this.bob.address);
         expect(bobRewards.incvReward).to.equal(getBigNumber(3));
+    })
 
+
+    it("Should return the total reward daily for the expected reward", async function () {
+        let expectedReward = await this.farming.expectedRewardsToday(2);
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760 ));
+    })
+
+    it("Should return the total number of day rewards regardless.", async function () {
+        let expectedReward = await this.farming.expectedRewardsToday(getBigNumber(1000));
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760 ));
+    })
+
+    it("Should return the correct amount if someone else stakes", async function () {
+        let expectedReward = await this.farming.expectedRewardsToday(1);
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760 ));
+
+        let totalStaked = await this.farming.totalStaked();
+        expect(totalStaked).to.equal(getBigNumber(0))
+
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760));
+        await this.farming.connect(this.bob).stake(1);
+        await this.farming.connect(this.alice).stake(1);
+        totalStaked = await this.farming.totalStaked();
+        expect(totalStaked).to.equal(2)
+
+        expectedReward = await this.farming.expectedRewardsToday(1);
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760/3));
+    })
+
+
+    it("Should return the correct amount if someone else stakes", async function () {
+        let expectedReward = await this.farming.expectedRewardsToday(1);
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760 ));
+
+        let totalStaked = await this.farming.totalStaked();
+        expect(totalStaked).to.equal(getBigNumber(0))
+
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760));
+        await this.farming.connect(this.bob).stake(1);
+        await this.farming.connect(this.alice).stake(1);
+        totalStaked = await this.farming.totalStaked();
+        expect(totalStaked).to.equal(2)
+
+        expectedReward = await this.farming.expectedRewardsToday(1);
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760/3));
+    })
+
+    it("Should return the total reward daily for the expected reward", async function () {
+        await this.farming.increaseAndChangeValues();
+        let expectedReward = await this.farming.expectedRewardsToday(2);
+        expect(expectedReward.incvReward).to.equal(getBigNumber(5760  * 2));
     })
 })

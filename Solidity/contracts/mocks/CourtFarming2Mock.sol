@@ -31,6 +31,10 @@ contract CourtFarming2Mock is CourtFarming {
         changeStakeParameters(18000e18, 60, 1640995200);
     }
 
+    function increaseAndChangeValues() public {
+        changeStakeParameters(2 * 1e18, 1 days, 1640995200);
+    }
+
     function setLPToken(address stakingAddress) public {
         stakedToken = IERC20(address(stakingAddress));
     }
