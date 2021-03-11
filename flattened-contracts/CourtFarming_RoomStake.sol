@@ -380,7 +380,7 @@ library SafeERC20 {
     }
 }
 
-contract CourtFarming_RoomLtake {
+contract CourtFarming_RoomStake {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -431,8 +431,8 @@ contract CourtFarming_RoomLtake {
         owner = msg.sender;
 
         // TODO: fill this info
-        uint256 incvRewardsPerBlock = 1e18;
-        uint256 incvRewardsPeriodInDays = 60;
+        uint256 incvRewardsPerBlock = 413359788359788355;
+        uint256 incvRewardsPeriodInDays = 90;
         // TODO: fill this info
         incvStartReleasingTime = 1619827200; // 01/05/2021 // check https://www.epochconverter.com/ for timestamp
         incvBatchPeriod = 1 days;
@@ -449,7 +449,7 @@ contract CourtFarming_RoomLtake {
         uint256 incvRewardBlockCount = incvRewardsPeriodInDays * 5760;
         uint256 incvRewardPerBlock = incvRewardsPerBlock;
 
-        _incvRewardPerBlock = incvRewardPerBlock.mul(1e18);
+        _incvRewardPerBlock = incvRewardPerBlock * (1e18);
         incvFinishBlock = blockNumber().add(incvRewardBlockCount);
 
         incvStartReleasingTime = iLockTime;
