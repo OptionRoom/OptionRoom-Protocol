@@ -431,7 +431,7 @@ contract CourtFarming_RoomLPStake {
         owner = msg.sender;
 
         // TODO: fill this info
-        uint256 incvRewardsPerBlock = 578703703703703697;
+        uint256 incvRewardsPerBlock = 57870370370370369;
         uint256 incvRewardsPeriodInDays = 90;
         // TODO: fill this info
         incvStartReleasingTime = 1619827200; // 01/05/2021 // check https://www.epochconverter.com/ for timestamp
@@ -518,7 +518,7 @@ contract CourtFarming_RoomLPStake {
             stakedToken.safeTransfer(msg.sender, amount);
             emit Unstaked(msg.sender, amount);
         }
-
+        claim = false;
     }
 
 
@@ -595,28 +595,9 @@ contract CourtFarming_RoomLPStake {
     // expected reward,
     // please note this is only expectation, because total balance may changed during the day
     function expectedRewardsToday(uint256 amount) external view returns (uint256 reward, uint256 incvReward) {
-        // read version of update
-
-        uint256 cnBlock = blockNumber();
-        uint256 prevIncvAccRewardPerToken = _incvAccRewardPerToken;
-
-
-        uint256 incvAccRewardPerToken = _incvAccRewardPerToken;
-        // update accRewardPerToken, in case totalSupply is zero do; not increment accRewardPerToken
-
-        uint256 incvLastRewardBlock = cnBlock < incvFinishBlock ? cnBlock : incvFinishBlock;
-        if (incvLastRewardBlock > _lastUpdateBlock) {
-            incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_incvRewardPerBlock).div(_totalStaked.add(amount))
-            .add(incvAccRewardPerToken);
-        }
-        uint256 incvRewardsPerBlock = amount
-        .mul(incvAccRewardPerToken.sub(prevIncvAccRewardPerToken))
-        .div(1e18);
-
-        // 5760 blocks per day
         reward = 0;
-        incvReward = incvRewardsPerBlock.mul(5760);
+        uint256 totalIncvRewardPerDay = _incvRewardPerBlock * 5760;
+        incvReward =  totalIncvRewardPerDay.div(_totalStaked.add(amount)).mul(amount).div(1e18);
     }
 
     function lastUpdateBlock() external view returns(uint256) {

@@ -140,7 +140,7 @@ contract CourtFarming {
             stakedToken.safeTransfer(msg.sender, amount);
             emit Unstaked(msg.sender, amount);
         }
-
+        claim = false;
     }
 
 
