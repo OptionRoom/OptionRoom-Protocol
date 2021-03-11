@@ -613,17 +613,11 @@ contract CourtFarming_RoomLPStake {
     }
 
     function blockNumber() public view returns (uint256) {
-        if(timeFrezed){
-            return frezedBlock + blockShift;
-        }
-        return block.number +blockShift;
+       return block.number;
     }
     
     function getCurrentTime() public view returns(uint256){
-        if(timeFrezed){
-            return frezedTime  + (blockShift *15);
-        }
-        return block.timestamp  + (blockShift *15);
+        return block.timestamp;
     }
     
     function getVestedAmount(uint256 lockedAmount, uint256 time) internal  view returns(uint256){
@@ -716,27 +710,4 @@ contract CourtFarming_RoomLPStake {
         return nextBatchTime;
 
     }
-
-    ///// for demo
-    bool public timeFrezed;
-    uint256 frezedBlock =0;
-    uint256 frezedTime = 0;
-    function frezeBlock(bool flag) public{
-        frezedBlock = blockNumber().sub(blockShift);
-        frezedTime = getCurrentTime().sub(blockShift*15);
-        timeFrezed = flag;
-    }
-    function isTimeFrerzed() public view returns(bool){
-        return timeFrezed;
-    }
-    uint256 public blockShift;
-    function increaseBlock(uint256 count) public{
-        blockShift+=count;
-    }
-    
-    
-    function getblockShift() external view returns(uint256){
-        return blockShift;
-    }
-    
 }
