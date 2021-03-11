@@ -246,4 +246,39 @@ describe("Stacking incentive rewards", function () {
         let balanceOfContract = await this.court.balanceOf(this.farming.address);
         expect(balanceOfContract).to.equal(getBigNumber(10))
     })
+
+    it("Should redraw and stake again and give the correct results ", async function () {
+        let bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0));
+        await this.farming.connect(this.bob).stake("1");
+        let currentBlock = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(currentBlock) + Number(10));
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(10));
+
+        await this.farming.connect(this.bob).incvRewardClaim();
+        let balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(11));
+
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0));
+
+        currentBlock = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(currentBlock) + Number(5));
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(5));
+
+        await this.farming.connect(this.bob).incvRewardClaim();
+        balanceOfCourtToken = await this.court.balanceOf(this.bob.address);
+        expect(balanceOfCourtToken).to.equal(getBigNumber(17));
+
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(0));
+
+        currentBlock = await this.farming.blockNumber();
+        await time.advanceBlockTo(Number(currentBlock) + Number(3));
+        bobRewards = await this.farming.rewards(this.bob.address);
+        expect(bobRewards.incvReward).to.equal(getBigNumber(3));
+
+    })
 })

@@ -14,7 +14,8 @@ contract CourtFarming2Mock is CourtFarming {
 
 //    uint256 totalRewards = (5760 * 450) * 1e18;
 //    uint256 rewardsPeriodInDays = 1 * 450;
-    uint256 incvTotalRewards = (5760 * 450) * 1e18;
+//    uint256 incvTotalRewards = (5760 * 450) * 1e18;
+    uint256 incvTotalRewards = (1 * 1e18) ;
     uint256  incvRewardsPeriodInDays = 1 * 450;
     uint256 incvLockTimeAssigned = 1640995200; // 01/01/2022
 
