@@ -217,28 +217,9 @@ contract CourtFarming {
     // expected reward,
     // please note this is only expectation, because total balance may changed during the day
     function expectedRewardsToday(uint256 amount) external view returns (uint256 reward, uint256 incvReward) {
-        // read version of update
-
-        uint256 cnBlock = blockNumber();
-        uint256 prevIncvAccRewardPerToken = _incvAccRewardPerToken;
-
-
-        uint256 incvAccRewardPerToken = _incvAccRewardPerToken;
-        // update accRewardPerToken, in case totalSupply is zero do; not increment accRewardPerToken
-
-        uint256 incvLastRewardBlock = cnBlock < incvFinishBlock ? cnBlock : incvFinishBlock;
-        if (incvLastRewardBlock > _lastUpdateBlock) {
-            incvAccRewardPerToken = incvLastRewardBlock.sub(_lastUpdateBlock)
-            .mul(_incvRewardPerBlock).div(_totalStaked.add(amount))
-            .add(incvAccRewardPerToken);
-        }
-        uint256 incvRewardsPerBlock = amount
-        .mul(incvAccRewardPerToken.sub(prevIncvAccRewardPerToken))
-        .div(1e18);
-
-        // 5760 blocks per day
         reward = 0;
-        incvReward = incvRewardsPerBlock.mul(5760);
+        uint256 totalIncvRewardPerDay = _incvRewardPerBlock * 5760;
+        incvReward =  totalIncvRewardPerDay.mul(1e18).div(_totalStaked.add(amount)).mul(amount).div(1e18);
     }
 
     function lastUpdateBlock() external view returns(uint256) {
