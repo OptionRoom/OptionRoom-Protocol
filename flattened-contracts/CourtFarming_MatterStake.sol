@@ -380,12 +380,12 @@ library SafeERC20 {
     }
 }
 
-contract CourtFarming_RoomLPStake {
+contract CourtFarming_MatterStake {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     // TODO: set the correct lpToken address
-    IERC20 public constant stakedToken = IERC20(0x49dc61732780785dEc733703637115A9401463f9);
+    IERC20 public constant stakedToken = IERC20(0x2D6CdF6F61EEDa72971a69EaA4821827c56Eba1a);
 
     //TODO: set the correct Court Token address
     IMERC20 public constant courtToken = IMERC20(0x6C82B5f4C06B8fB3722C24cDda066eFaaf398e93);
