@@ -385,10 +385,10 @@ contract CourtFarming_MatterStake {
     using SafeERC20 for IERC20;
 
     // TODO: set the correct lpToken address
-    IERC20 public constant stakedToken = IERC20(0x2D6CdF6F61EEDa72971a69EaA4821827c56Eba1a);
+    IERC20 public constant stakedToken = IERC20(0x2D6CdF6F61EEDa72971a69EaA4821827c56Eba1ax);
 
     //TODO: set the correct Court Token address
-    IMERC20 public constant courtToken = IMERC20(0x6C82B5f4C06B8fB3722C24cDda066eFaaf398e93);
+    IMERC20 public constant courtToken = IMERC20(0x6C82B5f4C06B8fB3722C24cDda066eFaaf398e93x);
 
     uint256 private _totalStaked;
     mapping(address => uint256) private _balances;
@@ -430,11 +430,10 @@ contract CourtFarming_MatterStake {
 
         owner = msg.sender;
 
-        // TODO: fill this info
         uint256 incvRewardsPerBlock = 8267195767195767;
         uint256 incvRewardsPeriodInDays = 90;
-        // TODO: fill this info
-        incvStartReleasingTime = 1619827200; // 01/05/2021 // check https://www.epochconverter.com/ for timestamp
+        
+        incvStartReleasingTime = 1620914400; // 13/05/2021 // check https://www.epochconverter.com/ for timestamp
         incvBatchPeriod = 1 days;
         incvBatchCount = 1;
 
