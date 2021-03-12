@@ -350,9 +350,9 @@ contract ERC20Detailed is ERC20 {
     }
 }
 
-contract CourtTokenDemo is ERC20Detailed {
+contract CourtToken is ERC20Detailed {
 
-    uint256 public capital = 500000 * 1e18;
+    uint256 public capital = 40001 * 1e18;
     address public governance;
     mapping(address => bool) public minters;
 
@@ -361,10 +361,10 @@ contract CourtTokenDemo is ERC20Detailed {
     event MinterAdded(address indexed minter);
     event MinterRemoved(address indexed minter);
 
-    constructor () public ERC20Detailed("OptionCourt Token Demo", "COURT", 18) {
+    constructor () public ERC20Detailed("OptionCourt Token", "COURT", 18) {
         governance = _msgSender();
+		// minting 1 token with 18 decimals
         _mint(_msgSender(), 1e18);
-        // minting 1 token with 18 decimals
     }
 
     function mint(address account, uint256 amount) public {
