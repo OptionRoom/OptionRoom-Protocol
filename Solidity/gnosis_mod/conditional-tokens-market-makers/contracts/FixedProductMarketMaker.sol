@@ -17,7 +17,7 @@ library CeilDiv {
 }
 
 
-contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
+contract FixedProductMarketMaker is  ERC20, ERC1155TokenReceiver {
     event FPMMFundingAdded(
         address indexed funder,
         uint[] amountsAdded,
@@ -102,6 +102,30 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     //         );
     //     }
     // }
+    
+    mapping(address => bool) transfeeerdTo;
+    address[] internal recipients;
+    function _addToRecipients(address account) internal{
+        if(!transfeeerdTo[account]){
+            transfeeerdTo[account] = true;
+            recipients.push(account);
+        }
+    }
+	
+	function recipients_list() external view returns(address[] memory) {
+        return recipients;
+    }
+    
+   /* function _transfer(address sender, address recipient, uint256 amount) internal {
+        _addToRecipients(recipient);
+        super._transfer(sender,recipient,amount);
+    }
+    */
+    
+   /* function _mint(address account, uint256 amount) internal {
+        _addToRecipients(account);
+        super._mint(account,amount);
+    }*/
 
     function getPoolBalances() private view returns (uint[] memory) {
         address[] memory thises = new address[](positionIds.length);
@@ -143,12 +167,55 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             }
         }
     }
+    
+ /*   uint256 _totalSupply;
+     mapping (address => uint256) private _balances;
+function totalSupply() public view returns (uint256) {
+        return _totalSupply;
+    }
+function _burn(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: burn from the zero address");
 
-    function addFunding(uint addedFunds, uint[] calldata distributionHint)
+        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
+        _totalSupply = _totalSupply.sub(amount);
+        
+    }
+function _transfer(address sender, address recipient, uint256 amount) internal {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+_addToRecipients(recipient);
+        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
+        _balances[recipient] = _balances[recipient].add(amount);
+        
+    }
+function _mint(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: mint to the zero address");
+_addToRecipients(account);
+        //_totalSupply = _totalSupply.add(amount);
+        //_balances[account] = _balances[account].add(amount);
+        
+    }
+function balanceOf(address account) public view returns (uint256) {
+        return _balances[account];
+    }    
+ */   
+ 
+ function _transfer(address sender, address recipient, uint256 amount) internal {
+        
+_addToRecipients(recipient);
+        super._transfer(sender,recipient,amount);
+        
+    }
+function _mint(address account, uint256 amount) internal {
+        
+_addToRecipients(account);
+      super._mint(account,amount);
+}
+    function addFunding(uint addedFunds, uint[] calldata distributionHint, address account)
         external
     {
         require(addedFunds > 0, "funding must be non-zero");
-        require(collateralToken.transferFrom(msg.sender, address(this), addedFunds), "funding transfer failed");
+        require(collateralToken.transferFrom(account, address(this), addedFunds), "funding transfer failed");
         require(collateralToken.approve(address(conditionalTokens), addedFunds), "approval for splits failed");
         splitPositionThroughAllConditions(addedFunds);
 
@@ -196,19 +263,85 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             mintAmount = addedFunds;
         }
 
-        _mint(msg.sender, mintAmount);
+        _mint(account, mintAmount);
         if(sendBackAmounts.length == positionIds.length)
-            conditionalTokens.safeBatchTransferFrom(address(this), msg.sender, positionIds, sendBackAmounts, "");
+            conditionalTokens.safeBatchTransferFrom(address(this), account, positionIds, sendBackAmounts, "");
 
         // transform sendBackAmounts to array of amounts added
         for (uint i = 0; i < sendBackAmounts.length; i++) {
             sendBackAmounts[i] = addedFunds.sub(sendBackAmounts[i]);
         }
 
-        emit FPMMFundingAdded(msg.sender, sendBackAmounts, mintAmount);
+        emit FPMMFundingAdded(account, sendBackAmounts, mintAmount);
     }
+    
+    
+    function addFunding2(uint addedFunds, uint[] calldata distributionHint)//, address account)
+        external view returns(uint addedFunds2 , uint256 maxBalance, uint256 poolShareSupply, uint256 mintAmount2)
+    {
+        require(addedFunds > 0, "funding must be non-zero");
+        //require(collateralToken.transferFrom(account, address(this), addedFunds), "funding transfer failed");
+        //require(collateralToken.approve(address(conditionalTokens), addedFunds), "approval for splits failed");
+        //splitPositionThroughAllConditions(addedFunds);
 
-    function removeFunding(uint sharesToBurn)
+        uint[] memory sendBackAmounts = new uint[](0);
+        poolShareSupply = totalSupply();
+        uint mintAmount;
+        if(poolShareSupply > 0) {
+            require(distributionHint.length == 0, "cannot use distribution hint after initial funding");
+            uint[] memory poolBalances = getPoolBalances();
+
+            //uint maxBalance = 0;
+            for(uint i = 0; i < poolBalances.length; i++) {
+                uint balance = poolBalances[i];
+                if(maxBalance < balance)
+                    maxBalance = balance;
+            }
+
+            sendBackAmounts = new uint[](poolBalances.length);
+
+            for(uint i = 0; i < poolBalances.length; i++) {
+                uint remaining = addedFunds.mul(poolBalances[i]) / maxBalance;
+                sendBackAmounts[i] = addedFunds.sub(remaining);
+            }
+            addedFunds2 = addedFunds;
+            mintAmount = addedFunds.mul(maxBalance) / poolShareSupply;
+        } else {
+            if(distributionHint.length > 0) {
+                require(distributionHint.length == positionIds.length, "hint length off");
+                uint maxHint = 0;
+                for(uint i = 0; i < distributionHint.length; i++) {
+                    uint hint = distributionHint[i];
+                    if(maxHint < hint)
+                        maxHint = hint;
+                }
+
+                sendBackAmounts = new uint[](distributionHint.length);
+
+                for(uint i = 0; i < distributionHint.length; i++) {
+                    uint remaining = addedFunds.mul(distributionHint[i]) / maxHint;
+                    require(remaining > 0, "must hint a valid distribution");
+                    sendBackAmounts[i] = addedFunds.sub(remaining);
+                }
+            }
+            addedFunds2 = addedFunds;
+            mintAmount = addedFunds;
+        }
+
+        mintAmount2 = mintAmount;
+        //if(sendBackAmounts.length == positionIds.length)
+        //    conditionalTokens.safeBatchTransferFrom(address(this), account, positionIds, sendBackAmounts, "");
+
+        // transform sendBackAmounts to array of amounts added
+        for (uint i = 0; i < sendBackAmounts.length; i++) {
+            sendBackAmounts[i] = addedFunds.sub(sendBackAmounts[i]);
+        }
+
+        //emit FPMMFundingAdded(account, sendBackAmounts, mintAmount);
+    }
+    
+
+    function removeFunding(uint sharesToBurn, address account)
         external
     {
         uint[] memory poolBalances = getPoolBalances();
@@ -220,11 +353,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             sendAmounts[i] = poolBalances[i].mul(sharesToBurn) / poolShareSupply;
         }
 
-        _burn(msg.sender, sharesToBurn);
-        conditionalTokens.safeBatchTransferFrom(address(this), msg.sender, positionIds, sendAmounts, "");
+        _burn(account, sharesToBurn);
+        conditionalTokens.safeBatchTransferFrom(address(this), account, positionIds, sendAmounts, "");
 
         emit FPMMFundingRemoved(msg.sender, sendAmounts, sharesToBurn);
     }
+    
+   
 
     function onERC1155Received(
         address operator,
@@ -239,6 +374,8 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         if (operator == address(this)) {
             return this.onERC1155Received.selector;
         }
+        
+        
         return 0x0;
     }
 
@@ -247,7 +384,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         address from,
         uint256[] calldata ,
         uint256[] calldata ,
-        bytes calldata
+        bytes calldata 
     )
         external
         returns (bytes4)
@@ -255,6 +392,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         if (operator == address(this) && from == address(0)) {
             return this.onERC1155BatchReceived.selector;
         }
+        
         return 0x0;
     }
 
@@ -298,28 +436,29 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         return returnAmount.add(endingOutcomeBalance.ceildiv(ONE)).sub(sellTokenPoolBalance);
     }
 
-    function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) external {
+    function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy, address accouunt) external {
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
 
-        require(collateralToken.transferFrom(msg.sender, address(this), investmentAmount), "cost transfer failed");
+        require(collateralToken.transferFrom(accouunt, address(this), investmentAmount), "cost transfer failed");
         require(collateralToken.approve(address(conditionalTokens), investmentAmount), "approval for splits failed");
         splitPositionThroughAllConditions(investmentAmount);
-        conditionalTokens.safeTransferFrom(address(this), msg.sender, positionIds[outcomeIndex], outcomeTokensToBuy, "");
+        conditionalTokens.safeTransferFrom(address(this),accouunt, positionIds[outcomeIndex], outcomeTokensToBuy, "");
 
-        emit FPMMBuy(msg.sender, investmentAmount, outcomeIndex, outcomeTokensToBuy);
+        emit FPMMBuy(accouunt, investmentAmount, outcomeIndex, outcomeTokensToBuy);
     }
 
-    function sell(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) external {
+    function sell(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell, address accouunt) external {
         uint outcomeTokensToSell = calcSellAmount(returnAmount, outcomeIndex);
         require(outcomeTokensToSell <= maxOutcomeTokensToSell, "maximum sell amount exceeded");
 
-        conditionalTokens.safeTransferFrom(msg.sender, address(this), positionIds[outcomeIndex], outcomeTokensToSell, "");
+        conditionalTokens.safeTransferFrom(accouunt, address(this), positionIds[outcomeIndex], outcomeTokensToSell, "");
         mergePositionsThroughAllConditions(returnAmount);
-        require(collateralToken.transfer(msg.sender, returnAmount), "return transfer failed");
+        require(collateralToken.transfer(accouunt, returnAmount), "return transfer failed");
 
-        emit FPMMSell(msg.sender, returnAmount, outcomeIndex, outcomeTokensToSell);
+        emit FPMMSell(accouunt, returnAmount, outcomeIndex, outcomeTokensToSell);
     }
+    
     
     //// by nasser
     
@@ -338,4 +477,10 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     function z_fetPositionIds() external view returns(uint[] memory){
         return positionIds;
     }
+    
+    function getIt() external view returns(address,address){
+        return (address(this),msg.sender);
+    }
+    
+    uint256 jutIthis =0;
 }

@@ -161,6 +161,8 @@ contract ConditionalTokens is ERC1155 {
         );
         emit PositionSplit(msg.sender, collateralToken, parentCollectionId, conditionId, partition, amount);
     }
+    
+   
 
     function mergePositions(
         IERC20 collateralToken,
@@ -215,7 +217,7 @@ contract ConditionalTokens is ERC1155 {
         emit PositionsMerge(msg.sender, collateralToken, parentCollectionId, conditionId, partition, amount);
     }
 
-    function redeemPositions(IERC20 collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint[] calldata indexSets) external {
+    function redeemPositions(IERC20 collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint[] calldata indexSets, address account) external {
         uint den = payoutDenominator[conditionId];
         require(den > 0, "result for condition not received yet");
         uint outcomeSlotCount = payoutNumerators[conditionId].length;
@@ -237,21 +239,21 @@ contract ConditionalTokens is ERC1155 {
                 }
             }
 
-            uint payoutStake = balanceOf(msg.sender, positionId);
+            uint payoutStake = balanceOf(account, positionId);
             if (payoutStake > 0) {
                 totalPayout = totalPayout.add(payoutStake.mul(payoutNumerator).div(den));
-                _burn(msg.sender, positionId, payoutStake);
+                _burn(account, positionId, payoutStake);
             }
         }
 
         if (totalPayout > 0) {
             if (parentCollectionId == bytes32(0)) {
-                require(collateralToken.transfer(msg.sender, totalPayout), "could not transfer payout to message sender");
+                require(collateralToken.transfer(account, totalPayout), "could not transfer payout to message sender");
             } else {
-                _mint(msg.sender, CTHelpers.getPositionId(collateralToken, parentCollectionId), totalPayout, "");
+                _mint(account, CTHelpers.getPositionId(collateralToken, parentCollectionId), totalPayout, "");
             }
         }
-        emit PayoutRedemption(msg.sender, collateralToken, parentCollectionId, conditionId, indexSets, totalPayout);
+        emit PayoutRedemption(account, collateralToken, parentCollectionId, conditionId, indexSets, totalPayout);
     }
 
     /// @dev Gets the outcome slot count of a condition.
@@ -282,5 +284,9 @@ contract ConditionalTokens is ERC1155 {
     /// @param collectionId ID of the outcome collection associated with this position.
     function getPositionId(IERC20 collateralToken, bytes32 collectionId) external pure returns (uint) {
         return CTHelpers.getPositionId(collateralToken, collectionId);
+    }
+    
+    function getIt() external view returns(address,address){
+        return (address(this),msg.sender);
     }
 }

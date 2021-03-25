@@ -146,13 +146,25 @@ contract FixedProductMarketMakerFactory is ConstructedCloneFactory, FixedProduct
             conditionIds,
             fee
         );
-        markets.push(fixedProductMarketMaker);
+        
+        mmmm.push(address(fixedProductMarketMaker));
         return fixedProductMarketMaker;
     }
     
-    FixedProductMarketMaker[] markets;
+    address[] mmmm;
     
-    function getMarkets() public view returns(FixedProductMarketMaker[] memory){
-        return markets;
+    function getMM(uint dumy) public view returns(address[] memory){
+        dumy =0;
+        return mmmm;
+    }
+    
+    function resetMM() public {
+        while(mmmm.length > 0){
+            mmmm.pop();
+        }
+    }
+    
+    function getIt() external view returns(address,address){
+        return (address(this),msg.sender);
     }
 }
