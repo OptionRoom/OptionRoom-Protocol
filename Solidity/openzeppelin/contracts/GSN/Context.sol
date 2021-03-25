@@ -1,5 +1,3 @@
-// File: @openzeppelin/contracts/GSN/Context.sol
-
 pragma solidity ^0.5.0;
 
 /*
