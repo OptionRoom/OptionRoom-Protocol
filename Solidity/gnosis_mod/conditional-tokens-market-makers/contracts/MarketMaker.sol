@@ -1,11 +1,11 @@
 pragma solidity ^0.5.1;
-import { Ownable } from "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import { SafeMath } from "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import { SignedSafeMath } from "@gnosis.pm/util-contracts/contracts/SignedSafeMath.sol";
-import { ERC1155TokenReceiver } from "@gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
-import { CTHelpers } from "@gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
-import { ConditionalTokens } from "@gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
+import { Ownable } from "../../../openzeppelin/contracts/ownership/Ownable.sol";
+import { IERC20 } from "../../../openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeMath } from "../../../openzeppelin/contracts/math/SafeMath.sol";
+import { SignedSafeMath } from "../../util-contracts/contracts/SignedSafeMath.sol";
+import { ERC1155TokenReceiver } from "../../conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
+import { CTHelpers } from "../../conditional-tokens-contracts/contracts/CTHelpers.sol";
+import { ConditionalTokens } from "../../conditional-tokens-contracts/contracts/ConditionalTokens.sol";
 import { Whitelist } from "./Whitelist.sol";
 
 contract MarketMaker is Ownable, ERC1155TokenReceiver {

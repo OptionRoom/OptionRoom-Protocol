@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "openzeppelin-solidity/contracts/introspection/IERC165.sol";
+import "../../../../openzeppelin/contracts/introspection/IERC165.sol";
 
 /**
     @title ERC-1155 Multi Token Standard basic interface
