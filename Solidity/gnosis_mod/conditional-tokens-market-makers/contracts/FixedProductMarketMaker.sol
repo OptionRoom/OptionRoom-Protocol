@@ -187,6 +187,7 @@ _addToRecipients(account);
         require(addedFunds > 0, "funding must be non-zero");
         require(collateralToken.transferFrom(account, address(this), addedFunds), "funding transfer failed");
         require(collateralToken.approve(address(conditionalTokens), addedFunds), "approval for splits failed");
+        uint[] memory poolBalances = getPoolBalances();
         splitPositionThroughAllConditions(addedFunds);
 
         uint[] memory sendBackAmounts = new uint[](0);
@@ -194,8 +195,7 @@ _addToRecipients(account);
         uint mintAmount;
         if(poolShareSupply > 0) {
             require(distributionHint.length == 0, "cannot use distribution hint after initial funding");
-            uint[] memory poolBalances = getPoolBalances();
-
+            
             uint maxBalance = 0;
             for(uint i = 0; i < poolBalances.length; i++) {
                 uint balance = poolBalances[i];
@@ -210,7 +210,8 @@ _addToRecipients(account);
                 sendBackAmounts[i] = addedFunds.sub(remaining);
             }
 
-            mintAmount = addedFunds.mul(maxBalance) / poolShareSupply;
+            //mintAmount = addedFunds.mul(maxBalance) / poolShareSupply;
+            mintAmount = addedFunds.mul(poolShareSupply) / maxBalance;
         } else {
             if(distributionHint.length > 0) {
                 require(distributionHint.length == positionIds.length, "hint length off");

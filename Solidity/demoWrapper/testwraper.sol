@@ -55,9 +55,9 @@ interface MarketMakerFactory{
 
 contract testWrapper {
     
-    address aa1 = 0x31878BE94bAAfa79eCd61765977B0efbbEB62391;
-    address aa2 = 0xbf2ee068537ba2573DF294499AB68E752c5c580B;
-    address aa3 = 0x846dA996F8de8E11Df6dB0EaaE2de2abf11a7da7;
+    address aa1 = 0xeFdEa5Ca1730FcCFE2Dd511B6abF7ea5D7985d9C;
+    address aa2 = 0x26214DFC76834C4BcFC8f2aaFC934Bb9cF945776;
+    address aa3 = 0x33F32D44C2Bb5dDB6DA78c1E47f19A2eE1F73448;
     
 
     DollarInterface demoToken;
@@ -156,6 +156,13 @@ contract testWrapper {
     function share_balance(bytes32 questionId ,address account) external view returns(uint256){
         return marketFromQ[questionId].balanceOf(account);
     }
+    
+    
+    function share_totalBalance(bytes32 questionId) external view returns(uint256){
+        FixedProductMarketMaker market = marketFromQ[questionId];
+        return market.totalSupply();
+    }
+    
     
     function share_balanceList(bytes32 questionId) external view returns(account_balance[] memory sharesBalances){
         address[] memory recipients = marketFromQ[questionId].recipients_list();
