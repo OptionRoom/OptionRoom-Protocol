@@ -373,16 +373,40 @@ _addToRecipients(account);
         return getPoolBalances();
     }
     
-    function z_getAccountBalance(address accouunt) external view returns(uint[] memory){
+    function z_getAccountBalance(address account) public view returns(uint[] memory){
         address[] memory thises = new address[](positionIds.length);
         for(uint i = 0; i < positionIds.length; i++) {
-            thises[i] = accouunt;
+            thises[i] = account;
         }
         return conditionalTokens.balanceOfBatch(thises, positionIds);
     }
     
     function z_fetPositionIds() external view returns(uint[] memory){
         return positionIds;
+        
+    }
+    
+    
+    function z_merg(address account) external{
+        uint[] memory balances = z_getAccountBalance(account);
+        uint minBal = balances[0];
+        for(uint256 i=0;i<balances.length;i++){
+            if(balances[i] < minBal){
+                minBal = balances[i];
+            }
+        }
+        
+        require(minBal > 0, "one of the tokes is zero");
+        uint[] memory sendAmounts = new uint[](balances.length);
+        for(uint256 i=0;i<balances.length;i++){
+             sendAmounts[i] = minBal;
+         }
+        
+
+        conditionalTokens.safeBatchTransferFrom( account, address(this), positionIds, sendAmounts, "");
+        mergePositionsThroughAllConditions(minBal);
+        
+        require(collateralToken.transfer(account, minBal), "return transfer failed");
     }
     
     function getIt() external view returns(address,address){

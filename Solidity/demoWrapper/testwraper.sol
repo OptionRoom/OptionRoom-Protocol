@@ -37,6 +37,7 @@ interface FixedProductMarketMaker{
     function calcBuyAmount(uint investmentAmount, uint outcomeIndex) external view returns (uint);
     function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy, address accouunt) external;
     function sell(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell, address accouunt) external;
+    function z_merg(address account) external;
     function getIt() external view returns(address,address);
 }
 
@@ -217,6 +218,11 @@ contract testWrapper {
         //todo merge
     }
     
+    
+    function mergeTheYesNo(bytes32 questionId, address account) public{
+        FixedProductMarketMaker market = marketFromQ[questionId];
+        market.z_merg(account);
+    }
     
     function calcBuyAmount(bytes32 questionId, uint investmentAmount, uint outcomeIndex) external view returns (uint){
         return marketFromQ[questionId].calcBuyAmount(investmentAmount,outcomeIndex);
