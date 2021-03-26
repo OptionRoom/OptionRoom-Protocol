@@ -280,11 +280,11 @@ contract ERC1155 is ERC165, IERC1155
     )
         internal
     {
-        if(to.isContract()) {
-            require(
-                IERC1155TokenReceiver(to).onERC1155BatchReceived(operator, from, ids, values, data) == IERC1155TokenReceiver(to).onERC1155BatchReceived.selector,
-                "ERC1155: got unknown value from onERC1155BatchReceived"
-            );
-        }
+       // if(to.isContract()) {
+       //     require(
+       //         IERC1155TokenReceiver(to).onERC1155BatchReceived(operator, from, ids, values, data) == IERC1155TokenReceiver(to).onERC1155BatchReceived.selector,
+       //         "ERC1155: got unknown value from onERC1155BatchReceived"
+       //     );
+      //  }
     }
 }
