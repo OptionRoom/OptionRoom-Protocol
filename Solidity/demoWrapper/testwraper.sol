@@ -55,10 +55,20 @@ interface MarketMakerFactory{
 
 contract testWrapper {
     
+    address aa1 = 0x3BD03D836363BD6c85226273C6A41385762A3147;
+    address aa2 = 0x39750CF35069B5197C078E6DCc3F2F0f14c9ec2E;
+    address aa3 = 0xe185D9912A59E3Ae7B6E3dfF802725DcE5C67cbF;
+    
 
-    DollarInterface demoToken  = DollarInterface(0xa3D1a76BA2B23E5E6005f721841Cb76839CEfA2D);
-    ConditionalTokens ct = ConditionalTokens(0x02063b788c0dEdbe1fEaDaa80d72C763486e0c94);
-    MarketMakerFactory mf = MarketMakerFactory(0x34e91BCd74F5108cB38B4BC027c446EcE195E8CB);
+    DollarInterface demoToken;
+    ConditionalTokens ct ;
+    MarketMakerFactory mf ;
+    
+    constructor() public{
+        demoToken  = DollarInterface(aa1);
+        ct = ConditionalTokens(aa2);
+        mf = MarketMakerFactory(aa3);
+    }
     
     struct tokenBalnce{
         address holder;

@@ -172,12 +172,16 @@ contract ERC20 is Context, IERC20 {
      */
     function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
-
+aaa1prevTotalSupply = _totalSupply;
         _totalSupply = _totalSupply.add(amount);
+aaa2newTotalSupply = _totalSupply;
+aaa3lastMint = amount;
         _balances[account] = _balances[account].add(amount);
         emit Transfer(address(0), account, amount);
     }
-
+uint256 public aaa1prevTotalSupply=0;
+uint256 public aaa2newTotalSupply=0;
+uint256 public aaa3lastMint;
      /**
      * @dev Destroys `amount` tokens from `account`, reducing the
      * total supply.
