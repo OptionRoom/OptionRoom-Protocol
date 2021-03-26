@@ -246,71 +246,7 @@ _addToRecipients(account);
     }
     
     
-    function addFunding2(uint addedFunds, uint[] calldata distributionHint)//, address account)
-        external view returns(uint addedFunds2 , uint256 maxBalance, uint256 poolShareSupply, uint256 mintAmount2)
-    {
-        require(addedFunds > 0, "funding must be non-zero");
-        //require(collateralToken.transferFrom(account, address(this), addedFunds), "funding transfer failed");
-        //require(collateralToken.approve(address(conditionalTokens), addedFunds), "approval for splits failed");
-        //splitPositionThroughAllConditions(addedFunds);
-
-        uint[] memory sendBackAmounts = new uint[](0);
-        poolShareSupply = totalSupply();
-        uint mintAmount;
-        if(poolShareSupply > 0) {
-            require(distributionHint.length == 0, "cannot use distribution hint after initial funding");
-            uint[] memory poolBalances = getPoolBalances();
-
-            //uint maxBalance = 0;
-            for(uint i = 0; i < poolBalances.length; i++) {
-                uint balance = poolBalances[i];
-                if(maxBalance < balance)
-                    maxBalance = balance;
-            }
-
-            sendBackAmounts = new uint[](poolBalances.length);
-
-            for(uint i = 0; i < poolBalances.length; i++) {
-                uint remaining = addedFunds.mul(poolBalances[i]) / maxBalance;
-                sendBackAmounts[i] = addedFunds.sub(remaining);
-            }
-            addedFunds2 = addedFunds;
-            mintAmount = addedFunds.mul(maxBalance) / poolShareSupply;
-        } else {
-            if(distributionHint.length > 0) {
-                require(distributionHint.length == positionIds.length, "hint length off");
-                uint maxHint = 0;
-                for(uint i = 0; i < distributionHint.length; i++) {
-                    uint hint = distributionHint[i];
-                    if(maxHint < hint)
-                        maxHint = hint;
-                }
-
-                sendBackAmounts = new uint[](distributionHint.length);
-
-                for(uint i = 0; i < distributionHint.length; i++) {
-                    uint remaining = addedFunds.mul(distributionHint[i]) / maxHint;
-                    require(remaining > 0, "must hint a valid distribution");
-                    sendBackAmounts[i] = addedFunds.sub(remaining);
-                }
-            }
-            addedFunds2 = addedFunds;
-            mintAmount = addedFunds;
-        }
-
-        mintAmount2 = mintAmount;
-        //if(sendBackAmounts.length == positionIds.length)
-        //    conditionalTokens.safeBatchTransferFrom(address(this), account, positionIds, sendBackAmounts, "");
-
-        // transform sendBackAmounts to array of amounts added
-        for (uint i = 0; i < sendBackAmounts.length; i++) {
-            sendBackAmounts[i] = addedFunds.sub(sendBackAmounts[i]);
-        }
-
-        //emit FPMMFundingAdded(account, sendBackAmounts, mintAmount);
-    }
     
-
     function removeFunding(uint sharesToBurn, address account)
         external
     {
