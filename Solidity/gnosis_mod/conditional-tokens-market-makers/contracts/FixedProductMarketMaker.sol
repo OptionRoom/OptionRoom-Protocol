@@ -127,17 +127,7 @@ function test1(
         return recipients;
     }
     
-   /* function _transfer(address sender, address recipient, uint256 amount) internal {
-        _addToRecipients(recipient);
-        super._transfer(sender,recipient,amount);
-    }
-    */
-    
-   /* function _mint(address account, uint256 amount) internal {
-        _addToRecipients(account);
-        super._mint(account,amount);
-    }*/
-
+  
     function getPoolBalances() private view returns (uint[] memory) {
         address[] memory thises = new address[](positionIds.length);
         for(uint i = 0; i < positionIds.length; i++) {
@@ -179,37 +169,6 @@ function test1(
         }
     }
     
- /*   uint256 _totalSupply;
-     mapping (address => uint256) private _balances;
-function totalSupply() public view returns (uint256) {
-        return _totalSupply;
-    }
-function _burn(address account, uint256 amount) internal {
-        require(account != address(0), "ERC20: burn from the zero address");
-
-        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
-        _totalSupply = _totalSupply.sub(amount);
-        
-    }
-function _transfer(address sender, address recipient, uint256 amount) internal {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
-_addToRecipients(recipient);
-        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
-        _balances[recipient] = _balances[recipient].add(amount);
-        
-    }
-function _mint(address account, uint256 amount) internal {
-        require(account != address(0), "ERC20: mint to the zero address");
-_addToRecipients(account);
-        //_totalSupply = _totalSupply.add(amount);
-        //_balances[account] = _balances[account].add(amount);
-        
-    }
-function balanceOf(address account) public view returns (uint256) {
-        return _balances[account];
-    }    
- */   
  
  function _transfer(address sender, address recipient, uint256 amount) internal {
         

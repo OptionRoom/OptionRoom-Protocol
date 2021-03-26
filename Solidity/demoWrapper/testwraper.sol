@@ -55,9 +55,9 @@ interface MarketMakerFactory{
 
 contract testWrapper {
     
-    address aa1 = 0x3BD03D836363BD6c85226273C6A41385762A3147;
-    address aa2 = 0x39750CF35069B5197C078E6DCc3F2F0f14c9ec2E;
-    address aa3 = 0xe185D9912A59E3Ae7B6E3dfF802725DcE5C67cbF;
+    address aa1 = 0x31878BE94bAAfa79eCd61765977B0efbbEB62391;
+    address aa2 = 0xbf2ee068537ba2573DF294499AB68E752c5c580B;
+    address aa3 = 0x846dA996F8de8E11Df6dB0EaaE2de2abf11a7da7;
     
 
     DollarInterface demoToken;
